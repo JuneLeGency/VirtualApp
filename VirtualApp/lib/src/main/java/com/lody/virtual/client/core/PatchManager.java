@@ -1,7 +1,7 @@
 package com.lody.virtual.client.core;
 
 import android.os.Build;
-
+import com.lc.puppet.client.core.InterceptorManager;
 import com.lody.virtual.client.hook.base.HookDelegate;
 import com.lody.virtual.client.hook.base.PatchDelegate;
 import com.lody.virtual.client.hook.delegate.AppInstrumentation;
@@ -111,7 +111,7 @@ public final class PatchManager {
 			addPatch(new PackageManagerPatch());
 			return;
 		}
-		if (VirtualCore.get().isVAppProcess()) {
+		if (VirtualCore.get().isVAppProcess()||VirtualCore.get().isFakeApp()) {
 			addPatch(new LibCorePatch());
 			addPatch(new ActivityManagerPatch());
 			addPatch(new PackageManagerPatch());
@@ -201,4 +201,12 @@ public final class PatchManager {
 		return null;
 	}
 
+    public void toggleInterceptor(boolean isInterceptorEnabled) {
+        InterceptorManager interceptorManager = InterceptorManager.get();
+        if(isInterceptorEnabled){
+            interceptorManager.applyInterceptors(injectTable);
+        }else{
+            interceptorManager.removeInterceptors(injectTable);
+        }
+    }
 }

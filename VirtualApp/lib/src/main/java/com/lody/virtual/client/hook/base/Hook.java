@@ -3,6 +3,7 @@ package com.lody.virtual.client.hook.base;
 import android.content.Context;
 import android.content.pm.PackageManager;
 
+import com.lc.puppet.client.hook.base.InterceptorHook;
 import com.lody.virtual.client.VClientImpl;
 import com.lody.virtual.client.core.VirtualCore;
 
@@ -15,6 +16,23 @@ import java.lang.reflect.Method;
 public abstract class Hook {
 	
 	private boolean enable = true;
+
+	private InterceptorHook interceptHook;
+
+	public void setInterceptHook(InterceptorHook interceptHook) {
+		this.interceptHook = interceptHook;
+	}
+    public void removeInterceptorHook(){
+        this.interceptHook = null;
+    }
+
+	private boolean isAvailableHook(Hook hook){
+        return hook != null && hook.isEnable();
+    }
+
+	private boolean isAvailableInnerOnHook(InterceptorHook hook){
+        return isAvailableHook(hook) && hook.isOnHookEnabled();
+    }
 
 	public abstract String getName();
 

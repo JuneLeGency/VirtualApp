@@ -19,6 +19,8 @@ import android.os.Looper;
 import android.os.Process;
 import android.os.RemoteException;
 
+import com.lc.puppet.IPuppetStage;
+import com.lc.puppet.client.local.interceptor.VInterceptorCallManager;
 import com.lody.virtual.client.env.Constants;
 import com.lody.virtual.client.env.VirtualRuntime;
 import com.lody.virtual.client.fixer.ContextFixer;
@@ -26,9 +28,9 @@ import com.lody.virtual.client.hook.delegate.ComponentDelegate;
 import com.lody.virtual.client.hook.delegate.PhoneInfoDelegate;
 import com.lody.virtual.client.hook.delegate.TaskDescriptionDelegate;
 import com.lody.virtual.client.ipc.LocalProxyUtils;
+import com.lody.virtual.client.ipc.ServiceManagerNative;
 import com.lody.virtual.client.ipc.VActivityManager;
 import com.lody.virtual.client.ipc.VPackageManager;
-import com.lody.virtual.client.ipc.ServiceManagerNative;
 import com.lody.virtual.client.stub.StubManifest;
 import com.lody.virtual.helper.compat.BundleCompat;
 import com.lody.virtual.helper.proto.AppSetting;
@@ -79,11 +81,12 @@ public final class VirtualCore {
 	private final int myUid = Process.myUid();
 	private int systemPid;
 	private ConditionVariable initLock = new ConditionVariable();
+    private boolean isInterceptorEnabled;
 	private PhoneInfoDelegate phoneInfoDelegate;
 	private ComponentDelegate componentDelegate;
 	private TaskDescriptionDelegate taskDescriptionDelegate;
 
-	public ConditionVariable getInitLock() {
+    public ConditionVariable getInitLock() {
 		return initLock;
 	}
 
@@ -176,8 +179,25 @@ public final class VirtualCore {
 				initLock.open();
 				initLock = null;
 			}
-		}
+            if (processType == ProcessType.SETTING || processType == ProcessType.VAppClient) {
+                //设置页和 子应用 都使用
+                VInterceptorCallManager.get().getInterface().bindChange(mStub);
+            }
+        }
 	}
+
+    private IPuppetStage.Stub mStub = new IPuppetStage.Stub() {
+        @Override
+        public void onPuppetChanged(boolean enabled) throws RemoteException {
+            setInterceptorEnabled(enabled);
+        }
+    };
+
+    private void applyPatch() throws Throwable {
+        PatchManager patchManager = PatchManager.getInstance();
+        patchManager.toggleInterceptor(isInterceptorEnabled);
+    }
+
 
 	private void detectProcessType() {
 		// Host package name
@@ -192,7 +212,9 @@ public final class VirtualCore {
 			processType = ProcessType.Server;
 		} else if (VActivityManager.get().isAppProcess(processName)) {
 			processType = ProcessType.VAppClient;
-		} else {
+		}else if(processName.endsWith(":setting")){
+            processType = ProcessType.SETTING;
+        }  else {
 			processType = ProcessType.CHILD;
 		}
 		if (isVAppProcess()) {
@@ -340,7 +362,21 @@ public final class VirtualCore {
 		}
 	}
 
-	public AppSetting findApp(String pkg) {
+    public void setInterceptorEnabled(boolean interceptorEnabled) {
+        if (isInterceptorEnabled == interceptorEnabled) return;
+        isInterceptorEnabled = interceptorEnabled;
+        try {
+            applyPatch();
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
+    }
+
+    public boolean isInterceptorEnabled() {
+        return isInterceptorEnabled;
+    }
+
+    public AppSetting findApp(String pkg) {
 		try {
 			return getService().findAppInfo(pkg);
 		} catch (RemoteException e) {
@@ -454,6 +490,11 @@ public final class VirtualCore {
 		return systemPid;
 	}
 
+	public boolean isFakeApp() {
+		return processType==ProcessType.SETTING;
+	}
+
+
 	/**
 	 * Process type
 	 */
@@ -473,6 +514,7 @@ public final class VirtualCore {
 		/**
 		 * Child process
 		 */
-		CHILD
+		CHILD,
+		SETTING
 	}
 }

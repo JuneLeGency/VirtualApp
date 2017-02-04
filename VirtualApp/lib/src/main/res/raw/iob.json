@@ -1,0 +1,101 @@
+[
+  {
+    "index": "LOCATION",
+    "is_sync": false,
+    "min_api": -1,
+    "max_api": 999,
+    "sys_service": "location",
+    "sys_manager": "LocationManager",
+    "method": "requestLocationUpdates",
+    "params": [],
+    "comment": "获取位置与经纬度信息\nRegister for location updates using the named provider, and a pending intent."
+  },
+  {
+    "index": "NETWORK_INFO",
+    "is_sync": true,
+    "min_api": -1,
+    "max_api": 999,
+    "sys_service": "connectivity",
+    "sys_manager": "ConnectivityManager",
+    "method": "getActiveNetworkInfo",
+    "params": [],
+    "comment": "获取当前活动网络信息 Returns details about the currently active default data network. When connected, this network is the default route for outgoing connections. You should always check isConnected() before initiating network traffic. This may return null when there is no default network."
+  },
+  {
+    "index": "CELL_INFOS",
+    "is_sync": true,
+    "min_api": 17,
+    "max_api": 999,
+    "sys_service": "phone",
+    "sys_manager": "TelephonyManager",
+    "method": "getAllCellInfo",
+    "params": [],
+    "comment": "获取基站信息 Returns all observed cell information from all radios on the device including the primary and neighboring cells."
+  },
+   {
+    "index": "CELL_LOCATION",
+    "is_sync": true,
+    "min_api": -1,
+    "max_api": 999,
+    "sys_service": "phone",
+    "sys_manager": "TelephonyManager",
+    "method": "getCellLocation",
+    "params": [],
+    "comment": "获取基站位置信息 Returns all observed cell information from all radios on the device including the primary and neighboring cells. Calling this method does not trigger a call to onCellInfoChanged(), or change the rate at which onCellInfoChanged() is called."
+  },
+  {
+    "index": "NEIGHBORING_CELL_INFOS",
+    "is_sync": true,
+    "min_api": -1,
+    "max_api": 999,
+    "sys_service": "phone",
+    "sys_manager": "TelephonyManager",
+    "method": "getNeighboringCellInfo",
+    "params": [],
+    "comment": "获取临近基站位置信息 Returns the neighboring cell information of the device."
+  },
+  {
+    "index": "WIFI_INFO",
+    "is_sync": true,
+    "min_api": -1,
+    "max_api": 999,
+    "sys_service": "wifi",
+    "sys_manager": "WifiManager",
+    "method": "getConnectionInfo",
+    "params": [],
+    "comment": "获取当前活动网络信息 Return dynamic information about the current Wi-Fi connection, if any is active."
+  },
+  {
+    "index": "SCAN_RESULTS",
+    "is_sync": true,
+    "min_api": -1,
+    "max_api": 999,
+    "sys_service": "wifi",
+    "sys_manager": "WifiManager",
+    "method": "getScanResults",
+    "params": [],
+    "comment": "获取扫描的wifi列表 Return the results of the latest access point scan."
+  },
+  {
+    "index": "WIFI_STATE",
+    "is_sync": true,
+    "min_api": -1,
+    "max_api": 999,
+    "sys_service": "wifi",
+    "sys_manager": "WifiManager",
+    "method": "getWifiState",
+    "params": [],
+    "comment": "获取wifi 启用情况 Gets the Wi-Fi enabled state."
+  },
+  {
+  "index": "PHONE_TYPE",
+  "is_sync": true,
+  "min_api": 17,
+  "max_api": 999,
+  "sys_service": "phone",
+  "sys_manager": "TelephonyManager",
+  "method": "getPhoneType",
+  "params": [],
+  "comment": "获取基站信息 Returns all observed cell information from all radios on the device including the primary and neighboring cells."
+}
+]

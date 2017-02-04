@@ -1,0 +1,48 @@
+package com.lc.puppet.client.hook.base;
+
+
+import com.lody.virtual.client.hook.base.Hook;
+import com.lody.virtual.client.hook.base.PatchDelegate;
+
+import java.lang.reflect.Method;
+
+/**
+ * @author Junelegency
+ *
+ */
+public abstract class InterceptorHook extends Hook {
+
+    /**
+     *
+     * @return 返回true 代表 完全消费 不执行 原有方法
+     */
+    public boolean isOnHookConsumed(){
+        return true;
+    }
+
+    public boolean isOnHookEnabled(){
+        return true;
+    }
+
+    @Override
+    public boolean isEnable() {
+        return true;
+    }
+
+    @Override
+    public Object call(Object who, Method method, Object... args) throws Throwable {
+//        Log.d("InterceptorHook",this+ "called");
+        return super.call(who, method, args);
+    }
+
+    abstract public Class<? extends PatchDelegate> getDelegatePatch();
+
+    public boolean replaceOriginal() {
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "InterceptorHook{" + getDelegatePatch().getSimpleName() + " " + " method " + getName() + " }";
+    }
+}

@@ -6,6 +6,8 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
 
+import com.lc.puppet.service.VPuppetsService;
+import com.lc.puppet.storage.IObFlowBase;
 import com.lody.virtual.client.core.VirtualCore;
 import com.lody.virtual.client.ipc.ServiceManagerNative;
 import com.lody.virtual.client.stub.DaemonService;
@@ -49,8 +51,14 @@ public final class BinderProvider extends BaseContentProvider {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             addService(ServiceManagerNative.JOB, VJobSchedulerService.get());
         }
+        initInterceptor(context);
         VAppManagerService.get().preloadAllApps();
         return true;
+    }
+
+    private void initInterceptor(Context context) {
+        IObFlowBase.create(context);
+        addService(ServiceManagerNative.INTERCEPTOR_SERVICE, VPuppetsService.get());
     }
 
     private void addService(String name, IBinder service) {
