@@ -134,12 +134,8 @@ public class EnvManager {
                 });
     }
 
-    private void saveInRemote(String key, Object o) {
-        VInterceptorCallManager.get().save(key, o);
-    }
-
     void save(IObIndex key, Object o) {
-        saveInRemote(key.name(), o);
+        VInterceptorCallManager.get().save(key, o);
     }
 
     HashMap<IObIndex, Object> result;
