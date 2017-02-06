@@ -10,7 +10,6 @@ import com.lc.puppet.client.hook.base.InterceptorHook;
 import com.lc.puppet.storage.IObIndex;
 import com.lc.puppet.storage.IObType;
 import com.lc.puppet.storage.transfers.ClientTransfer;
-import com.lody.virtual.client.env.VirtualRuntime;
 import com.lody.virtual.client.ipc.ServiceManagerNative;
 
 /**
@@ -90,7 +89,7 @@ public class VInterceptorCallManager {
             //排除默认
             if (!tr.isInterface() && tr != Void.class && ClientTransfer.class.isAssignableFrom(tr)) {
                 iObTransfer = (ClientTransfer) tr.newInstance();
-                objectWrapper = iObTransfer.transfer(object);
+                objectWrapper = iObTransfer.transferToProxyObj(object);
                 getInterface().save(key, objectWrapper);
             } else {
                 getInterface().save(key, new IObjectWrapper(object));

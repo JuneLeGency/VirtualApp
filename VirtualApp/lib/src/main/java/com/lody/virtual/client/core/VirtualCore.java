@@ -22,6 +22,7 @@ import android.os.Process;
 import android.os.RemoteException;
 import com.lc.puppet.IPuppetStage;
 import com.lc.puppet.client.local.interceptor.VInterceptorCallManager;
+import com.lody.virtual.R;
 import com.lody.virtual.client.env.Constants;
 import com.lody.virtual.client.env.VirtualRuntime;
 import com.lody.virtual.client.fixer.ContextFixer;
@@ -188,7 +189,7 @@ public final class VirtualCore {
 
     private boolean isInterceptorEnabled;
 
-    public boolean isFakeApp() {
+    boolean isFakeApp() {
         return processType==ProcessType.SETTING;
     }
 
@@ -204,7 +205,7 @@ public final class VirtualCore {
         patchManager.toggleInterceptor(isInterceptorEnabled);
     }
 
-    public void setInterceptorEnabled(boolean interceptorEnabled) {
+    void setInterceptorEnabled(boolean interceptorEnabled) {
         if (isInterceptorEnabled == interceptorEnabled) return;
         isInterceptorEnabled = interceptorEnabled;
         try {
@@ -231,7 +232,9 @@ public final class VirtualCore {
             processType = ProcessType.Server;
         } else if (VActivityManager.get().isAppProcess(processName)) {
             processType = ProcessType.VAppClient;
-        } else {
+        } else if (processName.endsWith(context.getString(R.string.setting_process))) {
+            processType = ProcessType.SETTING;
+        }else {
             processType = ProcessType.CHILD;
         }
         if (isVAppProcess()) {

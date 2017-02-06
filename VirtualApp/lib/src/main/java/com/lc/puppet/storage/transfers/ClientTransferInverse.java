@@ -1,6 +1,5 @@
 package com.lc.puppet.storage.transfers;
 
-import com.lc.puppet.IObjectWrapper;
 
 /**
  *  cause some api data is different from the aidl interfaces so
@@ -9,8 +8,6 @@ import com.lc.puppet.IObjectWrapper;
  *  ITelephony.getCellLocation return Bundle
  * @author legency
  */
-public interface ClientTransfer<PROXY_OBJ,API_OBJ> {
-    IObjectWrapper<PROXY_OBJ> transferToProxyObj(API_OBJ object);
-    API_OBJ transferToApiObj(PROXY_OBJ object);
-
+public interface ClientTransferInverse<PROXY_OBJ,API_OBJ> {
+    API_OBJ transfer(PROXY_OBJ object);
 }

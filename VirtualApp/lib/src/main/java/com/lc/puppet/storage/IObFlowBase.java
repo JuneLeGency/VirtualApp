@@ -37,7 +37,7 @@ public abstract class IObFlowBase implements IObFlow {
         if (clazz.isInstance(object) || Reflect.wrapper(clazz).isAssignableFrom(Reflect.wrapper(object.getClass()))) {
 
         } else {
-            Log.w("IOB", String.format("saving %1s type not same transfer to %2s target %3s by %4s", key, object.getClass().getSimpleName(), clazz.getSimpleName(), iObTransfer.getClass().getSimpleName()));
+            Log.w("IOB", String.format("saving %1s type not same transferToProxyObj to %2s target %3s by %4s", key, object.getClass().getSimpleName(), clazz.getSimpleName(), iObTransfer.getClass().getSimpleName()));
         }
         return object;
     }

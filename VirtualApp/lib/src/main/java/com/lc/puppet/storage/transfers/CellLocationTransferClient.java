@@ -1,6 +1,7 @@
 package com.lc.puppet.storage.transfers;
 
 import android.os.Bundle;
+import android.telephony.CellLocation;
 import android.telephony.cdma.CdmaCellLocation;
 import android.telephony.gsm.GsmCellLocation;
 
@@ -9,7 +10,7 @@ import com.lc.puppet.IObjectWrapper;
 /**
  * @author legency
  */
-public class CellLocationTransferClient implements ClientTransfer<Bundle> {
+public class CellLocationTransferClient implements ClientTransfer<Bundle,CellLocation> {
 
     private static Bundle createGsmCellLocation(GsmCellLocation gsmCellLocation) {
         int lac = 9500;
@@ -50,7 +51,7 @@ public class CellLocationTransferClient implements ClientTransfer<Bundle> {
     }
 
     @Override
-    public IObjectWrapper<Bundle> transfer(Object object) {
+    public IObjectWrapper<Bundle> transferToProxyObj(CellLocation object) {
         IObjectWrapper<Bundle> wrapper = new IObjectWrapper<>();
         if (object instanceof GsmCellLocation) {
             wrapper.setParcelable(createGsmCellLocation((GsmCellLocation) object));
@@ -59,5 +60,10 @@ public class CellLocationTransferClient implements ClientTransfer<Bundle> {
             wrapper.setParcelable(createCdmaCellLocation((CdmaCellLocation) object));
         }
         return wrapper;
+    }
+
+    @Override
+    public CellLocation transferToApiObj(Bundle object) {
+        return mirror.android.telephony.CellLocation.newFromBundle.call(object);
     }
 }
