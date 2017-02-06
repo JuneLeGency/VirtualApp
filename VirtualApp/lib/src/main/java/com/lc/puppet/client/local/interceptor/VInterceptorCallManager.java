@@ -8,7 +8,6 @@ import com.lc.puppet.IPuppetManager;
 import com.lc.puppet.IObjectWrapper;
 import com.lc.puppet.client.hook.base.InterceptorHook;
 import com.lc.puppet.storage.IObIndex;
-import com.lc.puppet.storage.IObType;
 import com.lc.puppet.storage.transfers.ClientTransfer;
 import com.lody.virtual.client.ipc.ServiceManagerNative;
 
@@ -54,6 +53,17 @@ public class VInterceptorCallManager {
         return null;
     }
 
+    public Object getWithoutCall(IObIndex index) {
+        try {
+            IObjectWrapper object = getInterface().getWithoutCall(index.name());
+            ClientTransfer iObTransfer = index.getClientTransfer();
+            return iObTransfer==null?object.get():iObTransfer.transferToApiObj(object);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
 //    public void saveTestLocation() {
 //        Location location = new Location("gps");
 //        //测试浙江
@@ -75,31 +85,11 @@ public class VInterceptorCallManager {
 //    }
 
     public void save(IObIndex key, Object object) {
-        save(key.name(), object);
-    }
-
-    public void save(String key, Object object) {
         if (object == null)
             return;
         try {
-            IObType t = IObIndex.valueOf(key).asFiled().getAnnotation(IObType.class);
-            Class<?> tr = t.clientTransfer();
-            ClientTransfer iObTransfer;
-            IObjectWrapper objectWrapper;
-            //排除默认
-            if (!tr.isInterface() && tr != Void.class && ClientTransfer.class.isAssignableFrom(tr)) {
-                iObTransfer = (ClientTransfer) tr.newInstance();
-                objectWrapper = iObTransfer.transferToProxyObj(object);
-                getInterface().save(key, objectWrapper);
-            } else {
-                getInterface().save(key, new IObjectWrapper(object));
-            }
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        } catch (InstantiationException e) {
-            e.printStackTrace();
-        } catch (NoSuchFieldException e) {
-            e.printStackTrace();
+            ClientTransfer iObTransfer = key.getClientTransfer();
+            getInterface().save(key.name(), iObTransfer == null ? new IObjectWrapper(object) : iObTransfer.transferToProxyObj(object));
         } catch (RemoteException e) {
             e.printStackTrace();
         }

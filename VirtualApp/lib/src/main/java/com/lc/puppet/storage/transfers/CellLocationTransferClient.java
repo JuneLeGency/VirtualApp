@@ -63,7 +63,7 @@ public class CellLocationTransferClient implements ClientTransfer<Bundle,CellLoc
     }
 
     @Override
-    public CellLocation transferToApiObj(Bundle object) {
-        return mirror.android.telephony.CellLocation.newFromBundle.call(object);
+    public CellLocation transferToApiObj(IObjectWrapper<Bundle> object) {
+        return mirror.android.telephony.CellLocation.newFromBundle.call(object.get());
     }
 }

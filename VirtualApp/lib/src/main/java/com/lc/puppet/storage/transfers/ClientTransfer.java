@@ -11,6 +11,6 @@ import com.lc.puppet.IObjectWrapper;
  */
 public interface ClientTransfer<PROXY_OBJ,API_OBJ> {
     IObjectWrapper<PROXY_OBJ> transferToProxyObj(API_OBJ object);
-    API_OBJ transferToApiObj(PROXY_OBJ object);
+    API_OBJ transferToApiObj(IObjectWrapper<PROXY_OBJ> object);
 
 }

@@ -14,7 +14,7 @@
             android:icon="@mipmap/ev_launcher"
             android:label="@string/ev_app"
             android:launchMode="singleTask"
-            android:process=":setting">
+            android:process="@string/setting_process">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>

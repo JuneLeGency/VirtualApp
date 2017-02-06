@@ -24,16 +24,10 @@ public abstract class IObFlowBase implements IObFlow {
     public boolean enabled;
 
     protected Object extractDataBeforeSave(String key, IObjectWrapper iObjectWrapper) throws Throwable {
+        ServerTransfer iObTransfer = IObIndex.valueOf(key).getServerTransfer() ;
+        Object object = iObTransfer.transferBeforeSave(iObjectWrapper);
         IObType t = IObIndex.valueOf(key).asFiled().getAnnotation(IObType.class);
         Class<?> clazz = t.value();
-        Class<?> tr = t.serverTransfer();
-        ServerTransfer iObTransfer;
-        if (tr != Void.class && ServerTransfer.class.isAssignableFrom(tr)) {
-            iObTransfer = (ServerTransfer) tr.newInstance();
-        } else {
-            iObTransfer = new BaseServerTransfer<>();
-        }
-        Object object = iObTransfer.transferBeforeSave(iObjectWrapper);
         if (clazz.isInstance(object) || Reflect.wrapper(clazz).isAssignableFrom(Reflect.wrapper(object.getClass()))) {
 
         } else {
@@ -46,16 +40,10 @@ public abstract class IObFlowBase implements IObFlow {
         if (o == null) {
             throw new Exception(String.format("get data of key : %s failed target is null", key));
         }
+        ServerTransfer iObTransfer = IObIndex.valueOf(key).getServerTransfer() ;
+        Object object = iObTransfer.transferAfterRead(o);
         IObType t = IObIndex.valueOf(key).asFiled().getAnnotation(IObType.class);
         Class<?> clazz = t.value();
-        Class<?> tr = t.serverTransfer();
-        ServerTransfer iObTransfer;
-        if (tr != Void.class && ServerTransfer.class.isAssignableFrom(tr)) {
-            iObTransfer = (ServerTransfer) tr.newInstance();
-        } else {
-            iObTransfer = new BaseServerTransfer<>();
-        }
-        Object object = iObTransfer.transferAfterRead(o);
         if (clazz.isInstance(object) || Reflect.wrapper(clazz).isAssignableFrom(Reflect.wrapper(object.getClass()))) {
             return object;
         } else {

@@ -67,6 +67,11 @@ public class VPuppetsService extends IPuppetManager.Stub {
     }
 
     @Override
+    public IObjectWrapper getWithoutCall(String key) {
+        return new IObjectWrapper(iobFlow.get(key));
+    }
+
+    @Override
     public boolean save(String key, IObjectWrapper iObjectWrapper) {
         return iobFlow.save(key, iObjectWrapper);
     }

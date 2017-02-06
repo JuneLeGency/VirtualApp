@@ -7,6 +7,8 @@ interface IPuppetManager {
 
     IObjectWrapper call(in ICallBody iCallBody);
 
+    IObjectWrapper getWithoutCall(String key);
+
     boolean save(String key, in IObjectWrapper iObjectWrapper);
 
     //针对同步返回结果的方法 可以直接保存数据
@@ -14,13 +16,13 @@ interface IPuppetManager {
 
     List<String> getEnvs();
 
-    void setCurrentEnv(String menu);
+    void setCurrentEnv(String env);
 
     String getCurrentEnv();
 
-    void addEnv(String menu);
+    void addEnv(String env);
 
-    void delEnv(String menu);
+    void delEnv(String env);
 
     void backup();
 
