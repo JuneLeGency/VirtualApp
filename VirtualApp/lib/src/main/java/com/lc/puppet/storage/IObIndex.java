@@ -31,7 +31,7 @@ public enum IObIndex {
     CELL_INFOS,
 
     @IObType(value = Bundle.class, clientTransfer = CellLocationTransferClient.class)  // ,serverTransfer = CellLocationTransferServer.class )
-            CELL_LOCATION,
+    CELL_LOCATION,
 
     @IObType(List.class)
     NEIGHBORING_CELL_INFOS,

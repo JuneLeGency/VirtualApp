@@ -71,14 +71,13 @@ public class PaperFlow extends IObFlowBase {
     }
 
     @Override
-    public <T> T get(String key) {
+    public <T> T getInEnv(String key,String env) {
         try {
-            return (T) transferDataAfterRead(key, Paper.book(currentBook).read(key));
+            return (T) transferDataAfterRead(key, Paper.book(env).read(key));
         } catch (Throwable throwable) {
             throw new RuntimeException(throwable);
         }
     }
-
 
     @Override
     public <T> T get(ICallBody key) {

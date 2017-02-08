@@ -4,7 +4,6 @@ import android.content.Context;
 import android.util.Log;
 
 import com.lc.puppet.IObjectWrapper;
-import com.lc.puppet.storage.transfers.BaseServerTransfer;
 import com.lc.puppet.storage.transfers.ServerTransfer;
 import com.lody.virtual.helper.utils.Reflect;
 
@@ -97,6 +96,11 @@ public abstract class IObFlowBase implements IObFlow {
     @Override
     public <T> T get(IObIndex key) {
         return get(key.name());
+    }
+
+    @Override
+    public <T> T get(String key) {
+        return getInEnv(key,currentBook);
     }
 
     @Override

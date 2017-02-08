@@ -6,6 +6,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.IInterface;
+import android.os.RemoteException;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -43,14 +44,15 @@ public class LocationManagerProvider extends PatchHookProvider {
 
     /**
      * @param args
+     * @see com.android.server.LocationManagerService#requestLocationUpdates (LocationRequest request, ILocationListener listener, PendingIntent intent, String packageName)
      * @see com.lc.puppet.client.hook.patch.hook.location.Interceptor_RequestLocationUpdates
      */
     public void requestLocationUpdates(Object[] args) {
         if (args.length < 2 || !(args[1] instanceof IBinder)) {
             return;
         }
-        final IInterface i = ILocationListener.Stub.asInterface.call(args[1]);
-        IBinder binder = i.asBinder();
+        final IBinder iLocationListener = (IBinder) args[1];
+        final IInterface i = ILocationListener.Stub.asInterface.call(iLocationListener);
         Object locationObject = args[0];
         String provider = null;
 
@@ -58,16 +60,17 @@ public class LocationManagerProvider extends PatchHookProvider {
             provider = LocationRequestL.getProvider.call(locationObject);
         }
         final Location fakeLocation = getLocation();
+        if (!TextUtils.isEmpty(provider))
+            fakeLocation.setProvider(provider);
 
-        final Object iLocationListener = args[1];
         if (listeners == null) {
             listeners = new HashMap<>();
         }
-        if (listeners.containsKey(binder)) {
+        if (listeners.containsKey(iLocationListener)) {
             Log.e(TAG, "listener exist");
             return;
         }
-        LocationRunnable thread = new LocationRunnable() {
+        final LocationRunnable thread = new LocationRunnable() {
             @Override
             public void run() {
                 while (running && IObFlowBase.get().enabled) {
@@ -88,7 +91,21 @@ public class LocationManagerProvider extends PatchHookProvider {
                 }
             }
         };
-        listeners.put(binder, thread);
+        try {
+            iLocationListener.linkToDeath(new IBinder.DeathRecipient() {
+                @Override
+                public void binderDied() {
+                    Log.d(TAG, "binder died");
+                    thread.running = false;
+                    listeners.remove(iLocationListener);
+                }
+            }, 0);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+            return;
+        }
+
+        listeners.put(iLocationListener, thread);
         if (fixedThreadPool == null) {
             fixedThreadPool = new ThreadPoolExecutor(0, Integer.MAX_VALUE,
                     60L, TimeUnit.SECONDS,
@@ -109,11 +126,11 @@ public class LocationManagerProvider extends PatchHookProvider {
         if (args.length <= 2 || !(args[0] instanceof IBinder)) {
             return;
         }
-        Object iLocationListener = args[0];
+        IBinder iLocationListener = (IBinder) args[0];
         final IInterface i = ILocationListener.Stub.asInterface.call(iLocationListener);
         IBinder binder = i.asBinder();
         if (listeners != null) {
-            LocationRunnable a = listeners.remove(binder);
+            LocationRunnable a = listeners.remove(iLocationListener);
             if (a != null) {
                 a.running = false;
                 Log.d(TAG2, "remove location succeed hash:" + iLocationListener.hashCode());

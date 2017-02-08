@@ -7,7 +7,7 @@ interface IPuppetManager {
 
     IObjectWrapper call(in ICallBody iCallBody);
 
-    IObjectWrapper getWithoutCall(String key);
+    IObjectWrapper getInEnv(String key,String env);
 
     boolean save(String key, in IObjectWrapper iObjectWrapper);
 

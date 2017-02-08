@@ -27,8 +27,6 @@ public class EnvManager {
 
     private boolean locationSucceed;
 
-    private ObjectTransfer objectTransfer;
-
     public EnvManager(Context context) {
         this.context = context;
         initService();
@@ -134,15 +132,10 @@ public class EnvManager {
                 });
     }
 
-    private void saveInRemote(String key, Object o) {
+    void save(IObIndex key, Object o) {
         VInterceptorCallManager.get().save(key, o);
     }
 
-    void save(IObIndex key, Object o) {
-        saveInRemote(key.name(), o);
-    }
-
-    HashMap<IObIndex, Object> result;
 
     public void obtainEnvIntoHash(HashMap<IObIndex, Object> result) {
         obtainEnvIntoHash(result, null);
@@ -153,21 +146,45 @@ public class EnvManager {
             Log.e("EnvManager", "obtainEnvIntoHash your hash has error");
             return;
         }
-        this.result = result;
-        this.objectTransfer = objectTransfer;
-        store(IObIndex.NETWORK_INFO, connectivityManager.getActiveNetworkInfo());
+        store(IObIndex.NETWORK_INFO, connectivityManager.getActiveNetworkInfo(), result, objectTransfer);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-            store(IObIndex.CELL_INFOS, telephonyManager.getAllCellInfo());
+            store(IObIndex.CELL_INFOS, telephonyManager.getAllCellInfo(), result, objectTransfer);
         }
-        store(IObIndex.CELL_LOCATION, telephonyManager.getCellLocation());
-        store(IObIndex.NEIGHBORING_CELL_INFOS, telephonyManager.getNeighboringCellInfo());
-        store(IObIndex.WIFI_INFO, wifiManager.getConnectionInfo());
-        store(IObIndex.SCAN_RESULTS, wifiManager.getScanResults());
-        store(IObIndex.WIFI_STATE, wifiManager.getWifiState());
-        store(IObIndex.PHONE_TYPE, telephonyManager.getPhoneType());
+        store(IObIndex.CELL_LOCATION, telephonyManager.getCellLocation(), result, objectTransfer);
+        store(IObIndex.NEIGHBORING_CELL_INFOS, telephonyManager.getNeighboringCellInfo(), result, objectTransfer);
+        store(IObIndex.WIFI_INFO, wifiManager.getConnectionInfo(), result, objectTransfer);
+        store(IObIndex.SCAN_RESULTS, wifiManager.getScanResults(), result, objectTransfer);
+        store(IObIndex.WIFI_STATE, wifiManager.getWifiState(), result, objectTransfer);
+        store(IObIndex.PHONE_TYPE, telephonyManager.getPhoneType(), result, objectTransfer);
     }
 
-    void store(IObIndex key, Object o) {
+    public void obtainDbIntoHash(String env, HashMap<IObIndex, Object> result, ObjectTransfer objectTransfer) {
+        if (result == null || !result.isEmpty()) {
+            Log.e("EnvManager", "obtainEnvIntoHash your hash has error");
+            return;
+        }
+        storeDb(IObIndex.NETWORK_INFO, result, objectTransfer, env);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+            storeDb(IObIndex.CELL_INFOS, result, objectTransfer, env);
+        }
+        storeDb(IObIndex.CELL_LOCATION, result, objectTransfer, env);
+        storeDb(IObIndex.NEIGHBORING_CELL_INFOS, result, objectTransfer, env);
+        storeDb(IObIndex.WIFI_INFO, result, objectTransfer, env);
+        storeDb(IObIndex.SCAN_RESULTS, result, objectTransfer, env);
+        storeDb(IObIndex.WIFI_STATE, result, objectTransfer, env);
+        storeDb(IObIndex.PHONE_TYPE, result, objectTransfer, env);
+        storeDb(IObIndex.LOCATION, result, objectTransfer, env);
+    }
+
+    private void storeDb(IObIndex info, HashMap<IObIndex, Object> result, ObjectTransfer transfer, String env) {
+        Object obt = VInterceptorCallManager.get().getInEnv(info, env);
+        if (transfer != null) {
+            obt = transfer.transfer(obt);
+        }
+        result.put(info, obt);
+    }
+
+    void store(IObIndex key, Object o, HashMap<IObIndex, Object> result, ObjectTransfer objectTransfer) {
         Object obt = o;
         if (objectTransfer != null) {
             obt = objectTransfer.transfer(o);

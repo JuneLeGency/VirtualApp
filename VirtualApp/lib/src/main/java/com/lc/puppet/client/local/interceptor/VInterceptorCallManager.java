@@ -53,9 +53,9 @@ public class VInterceptorCallManager {
         return null;
     }
 
-    public Object getWithoutCall(IObIndex index) {
+    public Object getInEnv(IObIndex index,String env) {
         try {
-            IObjectWrapper object = getInterface().getWithoutCall(index.name());
+            IObjectWrapper object = getInterface().getInEnv(index.name(),env);
             ClientTransfer iObTransfer = index.getClientTransfer();
             return iObTransfer==null?object.get():iObTransfer.transferToApiObj(object);
         } catch (RemoteException e) {

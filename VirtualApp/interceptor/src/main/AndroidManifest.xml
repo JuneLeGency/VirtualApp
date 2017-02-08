@@ -8,8 +8,14 @@
         android:allowBackup="true"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+
+        <meta-data
+            android:name="com.amap.api.v2.apikey"
+            android:value="a34e32cf83a251917200d5985e315658"/>
+        <service android:name="com.amap.api.location.APSService"/>
+
         <activity
-            android:name="june.legency.env.SettingActivity"
+            android:name="june.legency.activities.SettingActivity"
             android:excludeFromRecents="false"
             android:icon="@mipmap/ev_launcher"
             android:label="@string/ev_app"
@@ -17,10 +23,28 @@
             android:process="@string/setting_process">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
+
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <activity android:name="june.legency.env.DetailActivity">
+        <activity android:name="june.legency.activities.DetailActivity">
+        </activity>
+        <activity
+            android:name="june.legency.activities.MainActivity"
+            android:label="@string/title_activity_main"
+            android:process="@string/setting_process"
+            android:theme="@style/AppTheme.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="june.legency.activities.EnvDetailActivity"
+            android:label="@string/title_activity_env_detail"
+            android:process="@string/setting_process"
+            android:theme="@style/AppTheme.NoActionBar">
         </activity>
     </application>
 
