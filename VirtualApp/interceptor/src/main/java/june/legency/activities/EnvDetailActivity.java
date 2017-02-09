@@ -5,8 +5,10 @@ import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
+import android.view.ViewGroup;
 
 import com.amap.api.maps.AMap;
 import com.amap.api.maps.CameraUpdate;
@@ -30,6 +32,8 @@ public class EnvDetailActivity extends AppCompatActivity {
     private HashMap<IObIndex, Object> result = new HashMap<>();
     private AMap mAMap;
     private MarkerOptions marker;
+    private RecyclerView mRecyclerView;
+    private EnvAdapter mAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,6 +60,9 @@ public class EnvDetailActivity extends AppCompatActivity {
         mAMap = mapView.getMap();
         AMapFragment.setMapCustomStyleFile(this,mAMap);
         render();
+
+        mRecyclerView = (RecyclerView)findViewById(R.id.env_detial);
+        mAdapter = new EnvAdapter();
     }
 
     private void render() {
@@ -82,4 +89,22 @@ public class EnvDetailActivity extends AppCompatActivity {
         mAMap.moveCamera(c);
     }
 
+
+    private class EnvAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>{
+
+        @Override
+        public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            return null;
+        }
+
+        @Override
+        public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+
+        }
+
+        @Override
+        public int getItemCount() {
+            return 0;
+        }
+    }
 }

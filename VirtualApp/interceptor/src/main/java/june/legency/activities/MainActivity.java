@@ -23,6 +23,8 @@ import june.legency.env.fragments.MainFragment;
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
+    private FloatingActionButton fab;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -30,7 +32,7 @@ public class MainActivity extends AppCompatActivity
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab = (FloatingActionButton) findViewById(R.id.fab);
         Drawable addFab = MaterialDrawableBuilder.with(this) // provide a context
                 .setIcon(MaterialDrawableBuilder.IconValue.PLUS_CIRCLE_OUTLINE) // provide an icon
                 .setColor(Color.WHITE) // set the icon color
@@ -92,8 +94,10 @@ public class MainActivity extends AppCompatActivity
         if (id == R.id.nav_map) {
             // Handle the camera action
             getSupportFragmentManager().beginTransaction().replace(R.id.content_main, new AMapFragment()).commit();
+            fab.show();
         } else if (id == R.id.nav_gallery) {
             getSupportFragmentManager().beginTransaction().replace(R.id.content_main, new MainFragment()).commit();
+            fab.hide();
         } else if (id == R.id.nav_slideshow) {
 
         } else if (id == R.id.nav_manage) {
