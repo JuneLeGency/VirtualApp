@@ -1,4 +1,4 @@
-package june.legency.env;
+package june.legency.activities;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -6,6 +6,8 @@ import android.text.TextUtils;
 import android.widget.TextView;
 import com.lc.puppet.storage.IObComment;
 import com.zzhoujay.richtext.RichText;
+
+import june.legency.env.R;
 
 
 public class DetailActivity extends AppCompatActivity {

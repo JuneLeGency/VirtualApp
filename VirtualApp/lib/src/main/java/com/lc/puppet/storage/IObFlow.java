@@ -26,6 +26,8 @@ public interface IObFlow {
 
     <T> T get(String key);
 
+    <T> T getInEnv(String key,String env);
+
     <T> T get(IObIndex key);
 
     <T> T get(ICallBody key);

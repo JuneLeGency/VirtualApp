@@ -67,8 +67,8 @@ public class VPuppetsService extends IPuppetManager.Stub {
     }
 
     @Override
-    public IObjectWrapper getWithoutCall(String key) {
-        return new IObjectWrapper(iobFlow.get(key));
+    public IObjectWrapper getInEnv(String key,String env) {
+        return new IObjectWrapper(iobFlow.getInEnv(key,env));
     }
 
     @Override

@@ -1,4 +1,4 @@
-package june.legency.env;
+package june.legency.activities;
 
 import android.content.Intent;
 import android.location.Location;
@@ -26,6 +26,8 @@ import com.lody.virtual.client.core.VirtualCore;
 import java.util.HashMap;
 import java.util.List;
 
+import june.legency.env.R;
+import june.legency.env.ShowListAdapter;
 import june.legency.env.bridge.EnvManager;
 
 public class SettingActivity extends AppCompatActivity implements CompoundButton.OnCheckedChangeListener, View.OnClickListener, AdapterView.OnItemSelectedListener {
