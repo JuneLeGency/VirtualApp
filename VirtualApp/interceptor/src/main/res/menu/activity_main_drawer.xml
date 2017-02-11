@@ -3,7 +3,7 @@
 
     <group android:checkableBehavior="single">
         <item
-            android:id="@+id/nav_gallery"
+            android:id="@+id/nav_main"
             android:icon="@drawable/ic_menu_env"
             android:title="主页"/>
         <item
@@ -11,7 +11,7 @@
             android:icon="@drawable/ic_map_gaode"
             android:title="高德地图"/>
         <item
-            android:id="@+id/nav_slideshow"
+            android:id="@+id/nav_du_map"
             android:icon="@drawable/ic_map_du"
             android:title="百度地图"/>
         <item

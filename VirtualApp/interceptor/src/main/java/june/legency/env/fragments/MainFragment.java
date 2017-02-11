@@ -19,7 +19,7 @@ import com.lody.virtual.client.core.VirtualCore;
 import java.util.ArrayList;
 import java.util.List;
 
-import june.legency.activities.EnvDetailActivity;
+import june.legency.env.activities.EnvDetailActivity;
 import june.legency.env.R;
 
 /**
