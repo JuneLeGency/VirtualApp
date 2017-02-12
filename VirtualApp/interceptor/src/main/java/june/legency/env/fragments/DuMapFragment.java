@@ -93,7 +93,7 @@ public class DuMapFragment extends Fragment {
         option.setCoorType("bd09ll");
         //可选，默认gcj02，设置返回的定位结果坐标系
 
-        int span=1000;
+        int span = 1000;
         option.setScanSpan(span);
         //可选，默认0，即仅定位一次，设置发起定位请求的间隔需要大于等于1000ms才是有效的
 
@@ -197,6 +197,7 @@ public class DuMapFragment extends Fragment {
     private class MyLocationListener implements BDLocationListener {
         @Override
         public void onReceiveLocation(BDLocation bdLocation) {
+            if (bdLocation == null) return;
             logLocation(bdLocation);
             Log.d("asd", "dumap location received" + bdLocation.getCity());
             BaiduMap dumap = mMapView.getMap();
@@ -210,7 +211,7 @@ public class DuMapFragment extends Fragment {
             // 设置定位数据
             dumap.setMyLocationData(locData);
             MapStatus.Builder builder = new MapStatus.Builder();
-            builder.target(new LatLng(bdLocation.getLatitude(),bdLocation.getLongitude())).zoom(18.0f);
+            builder.target(new LatLng(bdLocation.getLatitude(), bdLocation.getLongitude())).zoom(18.0f);
             dumap.animateMapStatus(MapStatusUpdateFactory.newMapStatus(builder.build()));
             // 设置定位图层的配置（定位模式，是否允许方向信息，用户自定义定位图标）
             BitmapDescriptor mCurrentMarker = BitmapDescriptorFactory
@@ -240,7 +241,7 @@ public class DuMapFragment extends Fragment {
             sb.append("\nradius : ");
             sb.append(location.getRadius());    //获取定位精准度
 
-            if (location.getLocType() == BDLocation.TypeGpsLocation){
+            if (location.getLocType() == BDLocation.TypeGpsLocation) {
 
                 // GPS定位结果
                 sb.append("\nspeed : ");
@@ -261,7 +262,7 @@ public class DuMapFragment extends Fragment {
                 sb.append("\ndescribe : ");
                 sb.append("gps定位成功");
 
-            } else if (location.getLocType() == BDLocation.TypeNetWorkLocation){
+            } else if (location.getLocType() == BDLocation.TypeNetWorkLocation) {
 
                 // 网络定位结果
                 sb.append("\naddr : ");
