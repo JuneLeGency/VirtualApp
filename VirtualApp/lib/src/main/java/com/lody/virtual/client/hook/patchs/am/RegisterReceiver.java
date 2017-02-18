@@ -31,7 +31,7 @@ import mirror.android.content.IIntentReceiverJB;
  * @author Lody
  */
 /* package */ class RegisterReceiver extends Hook {
-
+    private static final boolean DEBUG = true;
     private static final int IDX_IIntentReceiver = Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1
             ? 2
             : 1;
@@ -83,7 +83,10 @@ import mirror.android.content.IIntentReceiverJB;
             }
         }
         Object res = method.invoke(who, args);
-        VActivityManager.get().dispatchStickyBroadcast(backupFilter);
+        Intent intent = VActivityManager.get().dispatchStickyBroadcast(backupFilter);
+        if (intent != null) {
+            return intent;
+        }
         return res;
     }
 
@@ -99,6 +102,9 @@ import mirror.android.content.IIntentReceiverJB;
                 }
                 String newAction = SpecialComponentList.protectAction(action);
                 if (newAction != null) {
+                    if(DEBUG) {
+                        VLog.d("IntentSender", "register=" + newAction);
+                    }
                     iterator.set(newAction);
                 }
             }
@@ -122,6 +128,9 @@ import mirror.android.content.IIntentReceiverJB;
                                    boolean sticky, int sendingUser) throws RemoteException {
             if (!accept(intent)) {
                 return;
+            }
+            if(intent.hasExtra("_VA_|_intent_")){
+                intent = intent.getParcelableExtra("_VA_|_intent_");
             }
             SpecialComponentList.unprotectIntent(intent);
             if (Build.VERSION.SDK_INT > Build.VERSION_CODES.JELLY_BEAN) {

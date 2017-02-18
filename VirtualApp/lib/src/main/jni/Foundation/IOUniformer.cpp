@@ -30,7 +30,6 @@ void onSoLoaded(const char *name, void *handle);
 
 static inline bool startWith(const std::string &str, const std::string &prefix) {
     return str.compare(0, prefix.length(), prefix) == 0;
-    //return str.find(prefix) == 0;
 }
 
 
@@ -88,8 +87,36 @@ const char *IOUniformer::query(const char *orig_path) {
 }
 
 
-const char *IOUniformer::restore(const char *path) {
-    return path;
+const char *IOUniformer::restore(const char *_path) {
+    if (_path == NULL) {
+        return NULL;
+    }
+    std::string path(_path);
+    if (path.length() <= 1) {
+        return _path;
+    }
+    std::map<std::string, std::string>::iterator iterator;
+    iterator = RootIORedirectMap.find(path);
+    if (iterator != RootIORedirectMap.end()) {
+        return strdup(iterator->second.c_str());
+    }
+    for (iterator = RootIORedirectMap.begin(); iterator != RootIORedirectMap.end(); iterator++) {
+        const std::string &origin = iterator->first;
+        const std::string &redirected = iterator->second;
+        if (path == redirected) {
+            return strdup(origin.c_str());
+        }
+    }
+
+    for (iterator = IORedirectMap.begin(); iterator != IORedirectMap.end(); iterator++) {
+        const std::string &prefix = iterator->first;
+        const std::string &new_prefix = iterator->second;
+        if (startWith(path, new_prefix)) {
+            std::string origin_path = prefix + path.substr(new_prefix.length(), path.length());
+            return strdup(origin_path.c_str());
+        }
+    }
+    return _path;
 }
 
 
@@ -387,9 +414,7 @@ HOOK_DEF(int, truncate64, const char *pathname, off_t length) {
 
 // int chdir(const char *path);
 HOOK_DEF(int, chdir, const char *pathname) {
-    LOGE("chdir, orig %s", pathname);
     const char *redirect_path = match_redirected_path(pathname);
-    LOGE("chdir, new %s", redirect_path);
     int ret = syscall(__NR_chdir, redirect_path);
     FREE(redirect_path, pathname);
     return ret;
@@ -471,8 +496,17 @@ HOOK_DEF(void*, do_dlopen_V24, const char *name, int flags, const void *extinfo,
     return ret;
 }
 
+
+
+//void *dlsym(void *handle,const char *symbol)
+HOOK_DEF(void*, dlsym, void *handle, char *symbol) {
+    LOGD("dlsym : %p %s.", handle, symbol);
+    return orig_dlsym(handle, symbol);
+}
+
 // int kill(pid_t pid, int sig);
 HOOK_DEF(int, kill, pid_t pid, int sig) {
+    LOGD(">>>>> kill >>> pid: %d, sig: %d.", pid, sig);
     extern JavaVM *g_vm;
     extern jclass g_jclass;
     JNIEnv *env = NULL;
@@ -555,15 +589,6 @@ void IOUniformer::startUniformer(int api_level) {
         HOOK_IO(__open);
         HOOK_IO(mknod);
     } else {
-        HOOK_IO(__open);
-        HOOK_IO(stat);
-        HOOK_IO(lstat);
-        HOOK_IO(chown);
-        HOOK_IO(chmod);
-        HOOK_IO(access);
-        HOOK_IO(rmdir);
-        HOOK_IO(rename);
-
         HOOK_IO(__openat);
         HOOK_IO(linkat);
         HOOK_IO(unlinkat);
@@ -579,4 +604,6 @@ void IOUniformer::startUniformer(int api_level) {
         HOOK_IO(faccessat);
     }
     hook_dlopen(api_level);
+
+    HOOK_IO(dlsym);
 }

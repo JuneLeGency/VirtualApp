@@ -17,6 +17,7 @@ import com.lody.virtual.helper.compat.PackageParserCompat;
 import com.lody.virtual.helper.proto.AppSetting;
 import com.lody.virtual.helper.proto.InstallResult;
 import com.lody.virtual.helper.utils.FileUtils;
+import com.lody.virtual.helper.utils.ResourcesUtils;
 import com.lody.virtual.helper.utils.VLog;
 import com.lody.virtual.os.VEnvironment;
 import com.lody.virtual.os.VUserHandle;
@@ -26,6 +27,7 @@ import com.lody.virtual.server.am.BroadcastSystem;
 import com.lody.virtual.server.am.UidSystem;
 import com.lody.virtual.server.am.VActivityManagerService;
 import com.lody.virtual.server.interfaces.IAppObserver;
+import com.lody.virtual.server.interfaces.IAppRequestListener;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -38,23 +40,16 @@ import java.util.concurrent.atomic.AtomicReference;
 public class VAppManagerService extends IAppManager.Stub {
 
     private static final String TAG = VAppManagerService.class.getSimpleName();
-
-    private boolean isBooting;
-
-    private final UidSystem mUidSystem = new UidSystem();
-
     private static final AtomicReference<VAppManagerService> gService = new AtomicReference<>();
-
+    private final UidSystem mUidSystem = new UidSystem();
+    private boolean isBooting;
     private RemoteCallbackList<IAppObserver> mRemoteCallbackList = new RemoteCallbackList<IAppObserver>();
+
+    private IAppRequestListener listener;
 
     public static VAppManagerService get() {
         return gService.get();
     }
-
-    public boolean isBooting() {
-        return isBooting;
-    }
-
 
     public static void systemReady() {
         VAppManagerService instance = new VAppManagerService();
@@ -62,10 +57,17 @@ public class VAppManagerService extends IAppManager.Stub {
         gService.set(instance);
     }
 
+    public boolean isBooting() {
+        return isBooting;
+    }
+
     public void preloadAllApps() {
         isBooting = true;
         for (File appDir : VEnvironment.getDataAppDirectory().listFiles()) {
             String pkgName = appDir.getName();
+            if ("android".equals(pkgName)) {
+                continue;
+            }
             File storeFile = new File(appDir, "base.apk");
             int flags = 0;
             if (!storeFile.exists()) {
@@ -100,9 +102,10 @@ public class VAppManagerService extends IAppManager.Stub {
         return install(apkPath, flags, false);
     }
 
+
     private synchronized InstallResult install(String apkPath, int flags, boolean onlyScan) {
         if (apkPath == null) {
-            return InstallResult.makeFailure("Not given the apk path.");
+            return InstallResult.makeFailure("apk path = NULL");
         }
         File apk = new File(apkPath);
         if (!apk.exists() || !apk.isFile()) {
@@ -124,24 +127,25 @@ public class VAppManagerService extends IAppManager.Stub {
         }
         InstallResult res = new InstallResult();
         res.packageName = pkg.packageName;
-        // PackageCache holds all packages, try to check if need update.
+        // PackageCache holds all packages, try to check if we need to update.
         PackageParser.Package existOne = PackageCache.get(pkg.packageName);
+        AppSetting existSetting = findAppInfo(pkg.packageName);
         if (existOne != null) {
             if ((flags & InstallStrategy.IGNORE_NEW_VERSION) != 0) {
                 res.isUpdate = true;
                 return res;
             }
             if (!canUpdate(existOne, pkg, flags)) {
-                return InstallResult.makeFailure("Unable to update the Apk.");
+                return InstallResult.makeFailure("Not allowed to update the package.");
             }
             res.isUpdate = true;
         }
         File appDir = VEnvironment.getDataAppPackageDirectory(pkg.packageName);
-
-
         File libDir = new File(appDir, "lib");
         if (res.isUpdate) {
             FileUtils.deleteDir(libDir);
+            VEnvironment.getOdexFile(pkg.packageName).delete();
+            VActivityManagerService.get().killAppByPkg(pkg.packageName, VUserHandle.USER_ALL);
         }
         if (!libDir.exists() && !libDir.mkdirs()) {
             return InstallResult.makeFailure("Unable to create lib dir.");
@@ -149,10 +153,13 @@ public class VAppManagerService extends IAppManager.Stub {
         boolean dependSystem = (flags & InstallStrategy.DEPEND_SYSTEM_IF_EXIST) != 0
                 && VirtualCore.get().isOutsideInstalled(pkg.packageName);
 
+        if (existSetting != null && existSetting.dependSystem) {
+            dependSystem = false;
+        }
+
         if (!onlyScan) {
             NativeLibraryHelperCompat.copyNativeBinaries(new File(apkPath), libDir);
             if (!dependSystem) {
-                // /data/app/com.xxx.xxx-1/base.apk
                 File storeFile = new File(appDir, "base.apk");
                 File parentFolder = storeFile.getParentFile();
                 if (!parentFolder.exists() && !parentFolder.mkdirs()) {
@@ -166,6 +173,9 @@ public class VAppManagerService extends IAppManager.Stub {
         }
         if (existOne != null) {
             PackageCache.remove(pkg.packageName);
+        }
+        if (!dependSystem) {
+            ResourcesUtils.chmod(appDir);
         }
         AppSetting appSetting = new AppSetting();
         appSetting.parser = parser;
@@ -199,6 +209,7 @@ public class VAppManagerService extends IAppManager.Stub {
         return false;
     }
 
+
     public boolean uninstallApp(String pkg) {
         synchronized (PackageCache.sPackageCaches) {
             AppSetting setting = findAppInfo(pkg);
@@ -207,6 +218,7 @@ public class VAppManagerService extends IAppManager.Stub {
                     BroadcastSystem.get().stopApp(pkg);
                     VActivityManagerService.get().killAppByPkg(pkg, VUserHandle.USER_ALL);
                     FileUtils.deleteDir(VEnvironment.getDataAppPackageDirectory(pkg));
+                    VEnvironment.getOdexFile(pkg).delete();
                     for (int userId : VUserManagerService.get().getUserIds()) {
                         FileUtils.deleteDir(VEnvironment.getDataUserPackageDirectory(userId, pkg));
                     }
@@ -296,6 +308,34 @@ public class VAppManagerService extends IAppManager.Stub {
         } catch (Throwable e) {
             // Ignore
         }
+    }
+
+    @Override
+    public IAppRequestListener getAppRequestListener() {
+        return listener;
+    }
+
+    @Override
+    public void setAppRequestListener(final IAppRequestListener listener) {
+        this.listener = listener;
+        if (listener != null) {
+            try {
+                listener.asBinder().linkToDeath(new DeathRecipient() {
+                    @Override
+                    public void binderDied() {
+                        listener.asBinder().unlinkToDeath(this, 0);
+                        VAppManagerService.this.listener = null;
+                    }
+                }, 0);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @Override
+    public void clearAppRequestListener() {
+        this.listener = null;
     }
 
     public AppSetting findAppInfo(String pkg) {

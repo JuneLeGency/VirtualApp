@@ -40,6 +40,7 @@ import com.lody.virtual.helper.proto.InstallResult;
 import com.lody.virtual.helper.utils.BitmapUtils;
 import com.lody.virtual.os.VUserHandle;
 import com.lody.virtual.server.IAppManager;
+import com.lody.virtual.server.interfaces.IAppRequestListener;
 
 import java.io.IOException;
 import java.util.List;
@@ -246,13 +247,22 @@ public final class VirtualCore {
         if (mService == null) {
             synchronized (this) {
                 if (mService == null) {
-                    IAppManager remote = IAppManager.Stub
-                            .asInterface(ServiceManagerNative.getService(ServiceManagerNative.APP));
-                    mService = LocalProxyUtils.genProxy(IAppManager.class, remote);
+                    Object remote = getStubInterface();
+                    mService = LocalProxyUtils.genProxy(IAppManager.class, remote, new LocalProxyUtils.DeadServerHandler() {
+                        @Override
+                        public Object getNewRemoteInterface() {
+                            return getStubInterface();
+                        }
+                    });
                 }
             }
         }
         return mService;
+    }
+
+    private Object getStubInterface() {
+        return IAppManager.Stub
+                .asInterface(ServiceManagerNative.getService(ServiceManagerNative.APP));
     }
 
     /**
@@ -418,6 +428,48 @@ public final class VirtualCore {
         return true;
     }
 
+    public boolean removeShortcut(int userId, String packageName, Intent splash, OnEmitShortcutListener listener) {
+        AppSetting setting = findApp(packageName);
+        if (setting == null) {
+            return false;
+        }
+        ApplicationInfo appInfo = setting.getApplicationInfo(userId);
+        PackageManager pm = context.getPackageManager();
+        String name;
+        try {
+            CharSequence sequence = appInfo.loadLabel(pm);
+            name = sequence.toString();
+        } catch (Throwable e) {
+            return false;
+        }
+        if (listener != null) {
+            String newName = listener.getName(name);
+            if (newName != null) {
+                name = newName;
+            }
+        }
+        Intent targetIntent = getLaunchIntent(packageName, userId);
+        if (targetIntent == null) {
+            return false;
+        }
+        Intent shortcutIntent = new Intent();
+        shortcutIntent.setClassName(getHostPkg(), Constants.SHORTCUT_PROXY_ACTIVITY_NAME);
+        shortcutIntent.addCategory(Intent.CATEGORY_DEFAULT);
+        if (splash != null) {
+            shortcutIntent.putExtra("_VA_|_splash_", splash.toUri(0));
+        }
+        shortcutIntent.putExtra("_VA_|_intent_", targetIntent);
+        shortcutIntent.putExtra("_VA_|_uri_", targetIntent.toUri(0));
+        shortcutIntent.putExtra("_VA_|_user_id_", VUserHandle.myUserId());
+
+        Intent addIntent = new Intent();
+        addIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent);
+        addIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, name);
+        addIntent.setAction("com.android.launcher.action.UNINSTALL_SHORTCUT");
+        context.sendBroadcast(addIntent);
+        return true;
+    }
+
     public void setLoadingPage(Intent intent, Activity activity) {
         if (activity != null) {
             setLoadingPage(intent, mirror.android.app.Activity.mToken.get(activity));
@@ -522,11 +574,56 @@ public final class VirtualCore {
         }
     }
 
+    public void clearAppRequestListener() {
+        try {
+            getService().clearAppRequestListener();
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+    }
+
     public void preloadAllApps() {
         try {
             getService().preloadAllApps();
         } catch (RemoteException e) {
             // Ignore
+        }
+    }
+
+    public IAppRequestListener getAppRequestListener() {
+        try {
+            return getService().getAppRequestListener();
+        } catch (RemoteException e) {
+            return VirtualRuntime.crash(e);
+        }
+    }
+
+    public void setAppRequestListener(final AppRequestListener listener) {
+        IAppRequestListener inner = new IAppRequestListener.Stub() {
+            @Override
+            public void onRequestInstall(final String path) throws RemoteException {
+                VirtualRuntime.getUIHandler().post(new Runnable() {
+                    @Override
+                    public void run() {
+                        listener.onRequestInstall(path);
+                    }
+                });
+            }
+
+            @Override
+            public void onRequestUninstall(final String pkg) throws RemoteException {
+                VirtualRuntime.getUIHandler().post(new Runnable() {
+                    @Override
+                    public void run() {
+                        listener.onRequestUninstall(pkg);
+                    }
+                });
+            }
+        };
+        try {
+            getService().setAppRequestListener(inner);
+        } catch (RemoteException e) {
+            e.printStackTrace();
         }
     }
 
@@ -564,6 +661,12 @@ public final class VirtualCore {
          */
         CHILD,
         SETTING
+    }
+
+    public interface AppRequestListener {
+        void onRequestInstall(String path);
+
+        void onRequestUninstall(String pkg);
     }
 
     public interface OnEmitShortcutListener {

@@ -23,34 +23,40 @@ public class ServiceManagerNative {
 	public static final String APP = "app";
 	public static final String ACCOUNT = "account";
 	public static final String JOB = "job";
-	public static final String INTENT_FILTER = "intent_filter";
     public static final String INTERCEPTOR_SERVICE = "interceptor_service";
-	private static final String TAG = ServiceManagerNative.class.getSimpleName();
+	public static final String NOTIFICATION ="virtual_notification";
 	public static final String SERVICE_DEF_AUTH = "virtual.service.BinderProvider";
+	private static final String TAG = ServiceManagerNative.class.getSimpleName();
 	public static String SERVICE_CP_AUTH = "virtual.service.BinderProvider";
 
 	private static IServiceFetcher sFetcher;
 
-	public synchronized static IServiceFetcher getServiceFetcher() {
+	private static IServiceFetcher getServiceFetcher() {
 		if (sFetcher == null) {
-			Context context = VirtualCore.get().getContext();
-			Bundle response = new ProviderCall.Builder(context, SERVICE_CP_AUTH).methodName("@").call();
-			if (response != null) {
-				IBinder binder = BundleCompat.getBinder(response, "_VA_|_binder_");
-				linkBinderDied(binder);
-				sFetcher = IServiceFetcher.Stub.asInterface(binder);
+			synchronized (ServiceManagerNative.class) {
+				if (sFetcher == null) {
+					Context context = VirtualCore.get().getContext();
+					Bundle response = new ProviderCall.Builder(context, SERVICE_CP_AUTH).methodName("@").call();
+					if (response != null) {
+						IBinder binder = BundleCompat.getBinder(response, "_VA_|_binder_");
+						linkBinderDied(binder);
+						sFetcher = IServiceFetcher.Stub.asInterface(binder);
+					}
+				}
 			}
 		}
 		return sFetcher;
 	}
+
+	public static void clearServerFetcher() {
+        sFetcher = null;
+    }
 
 	private static void linkBinderDied(final IBinder binder) {
 		IBinder.DeathRecipient deathRecipient = new IBinder.DeathRecipient() {
 			@Override
 			public void binderDied() {
 				binder.unlinkToDeath(this, 0);
-				VLog.e(TAG, "Ops, the server has crashed.");
-				VirtualRuntime.exit();
 			}
 		};
 		try {

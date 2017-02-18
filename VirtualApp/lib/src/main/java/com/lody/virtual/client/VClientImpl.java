@@ -212,7 +212,8 @@ public final class VClientImpl extends IVClient.Stub {
                 super.start();
             }
         });
-        if (data.appInfo.targetSdkVersion < Build.VERSION_CODES.GINGERBREAD) {
+        int targetSdkVersion = data.appInfo.targetSdkVersion;
+        if (targetSdkVersion < Build.VERSION_CODES.GINGERBREAD) {
             StrictMode.ThreadPolicy newPolicy = new StrictMode.ThreadPolicy.Builder(StrictMode.getThreadPolicy()).permitNetwork().build();
             StrictMode.setThreadPolicy(newPolicy);
         }
@@ -220,6 +221,9 @@ public final class VClientImpl extends IVClient.Stub {
             if (mirror.android.os.StrictMode.sVmPolicyMask != null) {
                 mirror.android.os.StrictMode.sVmPolicyMask.set(0);
             }
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && targetSdkVersion < Build.VERSION_CODES.LOLLIPOP) {
+            mirror.android.os.Message.updateCheckRecycle.call(targetSdkVersion);
         }
         if (StubManifest.ENABLE_IO_REDIRECT) {
             startIOUniformer();
@@ -263,12 +267,7 @@ public final class VClientImpl extends IVClient.Stub {
             PatchManager.getInstance().checkEnv(AppInstrumentation.class);
         }
         mInitialApplication = LoadedApk.makeApplication.call(data.info, false, null);
-        Application injectedApp = mirror.android.app.ActivityThread.mInitialApplication.get(mainThread);
-        if (injectedApp != null) {
-            mInitialApplication = injectedApp;
-        } else {
-            mirror.android.app.ActivityThread.mInitialApplication.set(mainThread, mInitialApplication);
-        }
+        mirror.android.app.ActivityThread.mInitialApplication.set(mainThread, mInitialApplication);
         ContextFixer.fixContext(mInitialApplication);
         List<ProviderInfo> providers = VPackageManager.get().queryContentProviders(data.processName, vuid, PackageManager.GET_META_DATA);
         if (providers != null) {
@@ -284,7 +283,10 @@ public final class VClientImpl extends IVClient.Stub {
             if (conflict) {
                 PatchManager.getInstance().checkEnv(AppInstrumentation.class);
             }
-            mInitialApplication = ActivityThread.mInitialApplication.get(mainThread);
+            Application createdApp = ActivityThread.mInitialApplication.get(mainThread);
+            if (createdApp != null) {
+                mInitialApplication = createdApp;
+            }
         } catch (Exception e) {
             if (!mInstrumentation.onException(mInitialApplication, e)) {
                 throw new RuntimeException(
