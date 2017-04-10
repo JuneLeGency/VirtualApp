@@ -5,7 +5,6 @@ import android.app.IServiceConnection;
 import android.app.Notification;
 import android.content.ComponentName;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
 import android.content.pm.ProviderInfo;
 import android.os.Bundle;
@@ -16,15 +15,14 @@ import android.os.RemoteException;
 import com.lody.virtual.client.core.VirtualCore;
 import com.lody.virtual.client.env.VirtualRuntime;
 import com.lody.virtual.helper.compat.ActivityManagerCompat;
-import com.lody.virtual.helper.proto.AppTaskInfo;
-import com.lody.virtual.helper.proto.PendingIntentData;
-import com.lody.virtual.helper.proto.PendingResultData;
-import com.lody.virtual.helper.proto.VParceledListSlice;
 import com.lody.virtual.helper.utils.ComponentUtils;
 import com.lody.virtual.os.VUserHandle;
+import com.lody.virtual.remote.AppTaskInfo;
+import com.lody.virtual.remote.PendingIntentData;
+import com.lody.virtual.remote.PendingResultData;
+import com.lody.virtual.remote.VParceledListSlice;
 import com.lody.virtual.server.IActivityManager;
 import com.lody.virtual.server.interfaces.IProcessObserver;
-import com.lody.virtual.server.interfaces.IUiObserver;
 
 import java.util.HashMap;
 import java.util.List;
@@ -41,7 +39,6 @@ public class VActivityManager {
     private static final VActivityManager sAM = new VActivityManager();
     private final Map<IBinder, ActivityClientRecord> mActivities = new HashMap<IBinder, ActivityClientRecord>(6);
     private IActivityManager mRemote;
-    private Map<UiObserver, IUiObserver> observerMap = new HashMap<>(2);
 
     public static VActivityManager get() {
         return sAM;
@@ -52,12 +49,7 @@ public class VActivityManager {
             synchronized (VActivityManager.class) {
                 if (mRemote == null) {
                     final Object remote = getRemoteInterface();
-                    mRemote = LocalProxyUtils.genProxy(IActivityManager.class, remote, new LocalProxyUtils.DeadServerHandler() {
-                        @Override
-                        public Object getNewRemoteInterface() {
-                            return getRemoteInterface();
-                        }
-                    });
+                    mRemote = LocalProxyUtils.genProxy(IActivityManager.class, remote);
                 }
             }
         }
@@ -437,48 +429,6 @@ public class VActivityManager {
         }
     }
 
-    public void registerUIObserver(final UiObserver observer) {
-        IUiObserver innerObserver = new IUiObserver.Stub() {
-            @Override
-            public void enterAppUI(final int userId, final String packageName) throws RemoteException {
-                VirtualRuntime.getUIHandler().post(new Runnable() {
-                    @Override
-                    public void run() {
-                        observer.enterAppUI(userId, packageName);
-                    }
-                });
-            }
-
-            @Override
-            public void exitAppUI(final int userId, final String packageName) throws RemoteException {
-                VirtualRuntime.getUIHandler().post(new Runnable() {
-                    @Override
-                    public void run() {
-                        observer.exitAppUI(userId, packageName);
-                    }
-                });
-            }
-        };
-        observerMap.put(observer, innerObserver);
-
-        try {
-            getService().registerUIObserver(innerObserver);
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void unregisterUIObserver(UiObserver observer) {
-        IUiObserver innerObserver = observerMap.remove(observer);
-        if (innerObserver != null) {
-            try {
-                getService().unregisterUIObserver(innerObserver);
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
     public void sendBroadcast(Intent intent, int userId) {
         Intent newIntent = ComponentUtils.redirectBroadcastIntent(intent, userId);
         if (newIntent != null) {
@@ -502,19 +452,12 @@ public class VActivityManager {
         }
     }
 
-    public Intent dispatchStickyBroadcast(IntentFilter filter) {
+    public String getPackageForIntentSender(IBinder binder) {
         try {
-            return getService().dispatchStickyBroadcast(filter);
+            return getService().getPackageForIntentSender(binder);
         } catch (RemoteException e) {
             return VirtualRuntime.crash(e);
         }
     }
 
-    public interface UiObserver {
-
-        void enterAppUI(int userId, String packageName);
-
-        void exitAppUI(int userId, String packageName);
-
-    }
 }

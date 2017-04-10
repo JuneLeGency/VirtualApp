@@ -1,8 +1,8 @@
 package com.lc.puppet.client.hook.patch.hook.connectivity;
 
 import com.lc.puppet.client.hook.base.InterceptorServiceHook;
-import com.lody.virtual.client.hook.base.PatchDelegate;
-import com.lody.virtual.client.hook.patchs.connectivity.ConnectivityPatch;
+import com.lody.virtual.client.hook.base.MethodInvocationProxy;
+import com.lody.virtual.client.hook.proxies.connectivity.ConnectivityStub;
 
 /**
  * @author Junelegency
@@ -11,12 +11,12 @@ import com.lody.virtual.client.hook.patchs.connectivity.ConnectivityPatch;
 public class Interceptor_GetActiveNetworkInfo extends InterceptorServiceHook {
 
     @Override
-    public String getName() {
+    public String getMethodName() {
         return "getActiveNetworkInfo";
     }
 
     @Override
-    public Class<? extends PatchDelegate> getDelegatePatch() {
-        return ConnectivityPatch.class;
+    public Class<? extends MethodInvocationProxy> getDelegatePatch() {
+        return ConnectivityStub.class;
     }
 }

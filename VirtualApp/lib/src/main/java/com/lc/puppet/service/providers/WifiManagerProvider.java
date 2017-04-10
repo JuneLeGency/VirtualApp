@@ -1,20 +1,19 @@
 package com.lc.puppet.service.providers;
 
+import java.net.InetAddress;
+import java.util.ArrayList;
+import java.util.List;
+
 import android.net.wifi.ScanResult;
 import android.net.wifi.SupplicantState;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
-
 import com.lc.puppet.proto.WifiInfoMirror;
 import com.lc.puppet.service.providers.base.PatchHookProvider;
 import com.lc.puppet.storage.IObIndex;
-import com.lody.virtual.client.hook.base.PatchDelegate;
-import com.lody.virtual.client.hook.patchs.wifi.WifiManagerPatch;
+import com.lody.virtual.client.hook.base.MethodInvocationProxy;
+import com.lody.virtual.client.hook.proxies.wifi.WifiManagerStub;
 import com.lody.virtual.helper.utils.Reflect;
-
-import java.net.InetAddress;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * @author legency
@@ -22,8 +21,8 @@ import java.util.List;
 public class WifiManagerProvider extends PatchHookProvider {
 
     @Override
-    public Class<? extends PatchDelegate> getDelegatePatch() {
-        return WifiManagerPatch.class;
+    public Class<? extends MethodInvocationProxy> getDelegatePatch() {
+        return WifiManagerStub.class;
     }
 
     /**

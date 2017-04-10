@@ -2,19 +2,17 @@ package io.virtualapp;
 
 import android.app.Application;
 import android.content.Context;
-import android.widget.Toast;
 
-import com.github.moduth.blockcanary.BlockCanary;
-import com.lody.virtual.client.core.InstallStrategy;
+import com.flurry.android.FlurryAgent;
 import com.lody.virtual.client.core.VirtualCore;
 import com.lody.virtual.client.stub.StubManifest;
-import com.lody.virtual.helper.proto.InstallResult;
+import com.tencent.bugly.crashreport.CrashReport;
 
-import java.io.IOException;
-
+import io.virtualapp.delegate.MyAppRequestListener;
+import io.virtualapp.delegate.MyComponentDelegate;
+import io.virtualapp.delegate.MyPhoneInfoDelegate;
+import io.virtualapp.delegate.MyTaskDescriptionDelegate;
 import jonathanfinerty.once.Once;
-import me.drakeet.library.CrashWoodpecker;
-import me.drakeet.library.PatchMode;
 
 /**
  * @author Lody
@@ -22,18 +20,18 @@ import me.drakeet.library.PatchMode;
 public class VApp extends Application {
 
 
-    private static VApp gDefault;
+    private static VApp gApp;
 
     public static VApp getApp() {
-        return gDefault;
+        return gApp;
     }
-
 
     @Override
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(base);
+        StubManifest.ENABLE_IO_REDIRECT = true;
+        StubManifest.ENABLE_INNER_SHORTCUT = false;
         try {
-            StubManifest.ENABLE_IO_REDIRECT = true;
             VirtualCore.get().startup(base);
         } catch (Throwable e) {
             e.printStackTrace();
@@ -42,50 +40,46 @@ public class VApp extends Application {
 
     @Override
     public void onCreate() {
-        gDefault = this;
+        gApp = this;
         super.onCreate();
-        if (VirtualCore.get().isServerProcess()) {
-            VirtualCore.get().setAppRequestListener(new VirtualCore.AppRequestListener() {
-                @Override
-                public void onRequestInstall(String path) {
-                    Toast.makeText(VApp.this, "Installing: " + path, Toast.LENGTH_SHORT).show();
-                    InstallResult res = VirtualCore.get().installApp(path, InstallStrategy.UPDATE_IF_EXIST);
-                    if (res.isSuccess) {
-                        try {
-                            VirtualCore.get().preOpt(res.packageName);
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                        if (res.isUpdate) {
-                            Toast.makeText(VApp.this, "Update: " + res.packageName + " success!", Toast.LENGTH_SHORT).show();
-                        } else {
-                            Toast.makeText(VApp.this, "Install: " + res.packageName + " success!", Toast.LENGTH_SHORT).show();
-                        }
-                    } else {
-                        Toast.makeText(VApp.this, "Install failed: " + res.error, Toast.LENGTH_SHORT).show();
-                    }
-                }
+        CrashReport.initCrashReport(getApplicationContext(), "3642321b1a", false);
+        VirtualCore virtualCore = VirtualCore.get();
+        virtualCore.initialize(new VirtualCore.VirtualInitializer() {
 
-                @Override
-                public void onRequestUninstall(String pkg) {
-                    Toast.makeText(VApp.this, "Uninstall: " + pkg, Toast.LENGTH_SHORT).show();
+            @Override
+            public void onMainProcess() {
+                Once.initialise(VApp.this);
+                new FlurryAgent.Builder()
+                        .withLogEnabled(true)
+                        .withListener(() -> {
+                            // nothing
+                        })
+                        .build(VApp.this, "48RJJP7ZCZZBB6KMMWW5");
+            }
 
-                }
-            });
-        }else if (VirtualCore.get().isMainProcess()) {
-            Once.initialise(this);
-        } else if (VirtualCore.get().isVAppProcess()) {
-            BlockCanary.install(this, new AppBlockCanaryContext());
-            VirtualCore.get().setComponentDelegate(new MyComponentDelegate());
-            VirtualCore.get().setPhoneInfoDelegate(new MyPhoneInfoDelegate());
-            VirtualCore.get().setTaskDescriptionDelegate(new MyTaskDescriptionDelegate());
-        }
-        CrashWoodpecker.instance()
-                .withKeys("widget", "me.drakeet")
-                .setPatchMode(PatchMode.SHOW_LOG_PAGE)
-                .setPatchDialogUrlToOpen("https://drakeet.me")
-                .setPassToOriginalDefaultHandler(true)
-                .flyTo(this);
+            @Override
+            public void onVirtualProcess() {
+                //listener components
+                virtualCore.setComponentDelegate(new MyComponentDelegate());
+                //fake phone imei,macAddress,BluetoothAddress
+                virtualCore.setPhoneInfoDelegate(new MyPhoneInfoDelegate());
+                //fake task description's icon and title
+                virtualCore.setTaskDescriptionDelegate(new MyTaskDescriptionDelegate());
+            }
+
+            @Override
+            public void onServerProcess() {
+                virtualCore.setAppRequestListener(new MyAppRequestListener(VApp.this));
+                virtualCore.addVisibleOutsidePackage("com.tencent.mobileqq");
+                virtualCore.addVisibleOutsidePackage("com.tencent.mobileqqi");
+                virtualCore.addVisibleOutsidePackage("com.tencent.minihd.qq");
+                virtualCore.addVisibleOutsidePackage("com.tencent.qqlite");
+                virtualCore.addVisibleOutsidePackage("com.facebook.katana");
+                virtualCore.addVisibleOutsidePackage("com.whatsapp");
+                virtualCore.addVisibleOutsidePackage("com.tencent.mm");
+                virtualCore.addVisibleOutsidePackage("com.immomo.momo");
+            }
+        });
     }
 
 }

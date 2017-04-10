@@ -6,7 +6,7 @@ package com.lc.puppet.client.hook.patch.hook.telephony;
  */
 public class Interceptor_GetActivePhoneTypeForSlot extends BaseInterceptorTelephony {
     @Override
-    public String getName() {
+    public String getMethodName() {
         return "getActivePhoneTypeForSlot";
     }
 

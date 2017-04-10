@@ -1,5 +1,8 @@
 package com.lc.puppet.service.providers;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import android.os.Bundle;
 import android.telephony.CellIdentityLte;
 import android.telephony.CellInfo;
@@ -8,16 +11,12 @@ import android.telephony.NeighboringCellInfo;
 import android.telephony.TelephonyManager;
 import android.telephony.cdma.CdmaCellLocation;
 import android.telephony.gsm.GsmCellLocation;
-
 import com.lc.puppet.proto.CellInfoMirror;
 import com.lc.puppet.service.providers.base.PatchHookProvider;
 import com.lc.puppet.storage.IObIndex;
-import com.lody.virtual.client.hook.base.PatchDelegate;
-import com.lody.virtual.client.hook.patchs.telephony.TelephonyPatch;
+import com.lody.virtual.client.hook.base.MethodInvocationProxy;
+import com.lody.virtual.client.hook.proxies.telephony.TelephonyStub;
 import com.lody.virtual.helper.utils.Reflect;
-
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**
@@ -26,8 +25,8 @@ import java.util.List;
 public class TelephonyManagerProvider extends PatchHookProvider {
 
     @Override
-    public Class<? extends PatchDelegate> getDelegatePatch() {
-        return TelephonyPatch.class;
+    public Class<? extends MethodInvocationProxy> getDelegatePatch() {
+        return TelephonyStub.class;
     }
 
     /**

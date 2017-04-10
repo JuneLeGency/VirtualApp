@@ -1,8 +1,8 @@
 package com.lc.puppet.client.hook.patch.hook.telephony;
 
 import com.lc.puppet.client.hook.base.InterceptorServiceHook;
-import com.lody.virtual.client.hook.base.PatchDelegate;
-import com.lody.virtual.client.hook.patchs.telephony.TelephonyPatch;
+import com.lody.virtual.client.hook.base.MethodInvocationProxy;
+import com.lody.virtual.client.hook.proxies.telephony.TelephonyStub;
 
 /**
  * @author Junelegency
@@ -10,7 +10,7 @@ import com.lody.virtual.client.hook.patchs.telephony.TelephonyPatch;
  */
 public abstract class BaseInterceptorTelephony extends InterceptorServiceHook{
     @Override
-    public Class<? extends PatchDelegate> getDelegatePatch() {
-        return TelephonyPatch.class;
+    public Class<? extends MethodInvocationProxy> getDelegatePatch() {
+        return TelephonyStub.class;
     }
 }

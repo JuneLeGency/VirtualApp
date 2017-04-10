@@ -6,7 +6,7 @@ import android.os.RemoteException;
 import com.lc.puppet.ICallBody;
 import com.lc.puppet.IPuppetManager;
 import com.lc.puppet.IObjectWrapper;
-import com.lc.puppet.client.hook.base.InterceptorHook;
+import com.lc.puppet.client.hook.base.InterceptorMethod;
 import com.lc.puppet.storage.IObIndex;
 import com.lc.puppet.storage.transfers.ClientTransfer;
 import com.lody.virtual.client.ipc.ServiceManagerNative;
@@ -38,10 +38,10 @@ public class VInterceptorCallManager {
         return mRemote;
     }
 
-    public Object call(InterceptorHook interceptorHook, Object... objects) {
+    public Object call(InterceptorMethod interceptorMethod, Object... objects) {
         try {
 
-            ICallBody callBody = ICallBody.create(interceptorHook).arg(objects);
+            ICallBody callBody = ICallBody.create(interceptorMethod).arg(objects);
             IObjectWrapper object = getInterface().call(callBody);
             if (autoSave) {
                 getInterface().saveMethodResult(callBody, object);

@@ -6,7 +6,7 @@ package com.lc.puppet.client.hook.patch.hook.wifi;
 public class Interceptor_GetConnectionInfo extends BaseInterceptorWifi {
 
     @Override
-    public String getName() {
+    public String getMethodName() {
         return "getConnectionInfo";
     }
 }

@@ -14,7 +14,6 @@ import android.os.IBinder;
 import android.os.RemoteException;
 
 import com.lody.virtual.client.env.VirtualRuntime;
-import com.lody.virtual.helper.proto.ReceiverInfo;
 import com.lody.virtual.server.IPackageManager;
 
 import java.util.List;
@@ -37,12 +36,7 @@ public class VPackageManager {
 			synchronized (VPackageManager.class) {
 				if (mRemote == null) {
 					Object remote = getRemoteInterface();
-					mRemote = LocalProxyUtils.genProxy(IPackageManager.class, remote, new LocalProxyUtils.DeadServerHandler() {
-						@Override
-						public Object getNewRemoteInterface() {
-							return getRemoteInterface();
-						}
-					});
+					mRemote = LocalProxyUtils.genProxy(IPackageManager.class, remote);
 				}
 			}
 		}
@@ -227,15 +221,6 @@ public class VPackageManager {
 		try {
 			// noinspection unchecked
 			return getInterface().queryContentProviders(processName, uid, flags).getList();
-		} catch (RemoteException e) {
-			return VirtualRuntime.crash(e);
-		}
-	}
-
-	public List<ReceiverInfo> queryReceivers(String processName, int uid, int flags) {
-		try {
-			// noinspection unchecked
-			return getInterface().queryReceivers(processName, uid, flags);
 		} catch (RemoteException e) {
 			return VirtualRuntime.crash(e);
 		}

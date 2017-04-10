@@ -1,27 +1,26 @@
 package com.lc.puppet.client.hook.patch.hook.location;
 
-
-import com.lc.puppet.client.hook.base.InterceptorHook;
-import com.lody.virtual.client.hook.base.PatchDelegate;
-import com.lody.virtual.client.hook.patchs.location.LocationManagerPatch;
-import com.lody.virtual.client.hook.utils.HookUtils;
-
 import java.lang.reflect.Method;
+
+import com.lc.puppet.client.hook.base.InterceptorMethod;
+import com.lody.virtual.client.hook.base.MethodInvocationProxy;
+import com.lody.virtual.client.hook.proxies.location.LocationManagerStub;
+import com.lody.virtual.client.hook.utils.MethodParameterUtils;
 
 /**
  * @author Junelegency
  *
  */
-public class Interceptor_RemoveUpdates extends InterceptorHook {
+public class Interceptor_RemoveUpdates extends InterceptorMethod {
 
     @Override
     public boolean beforeCall(Object who, Method method, Object... args) {
-        HookUtils.replaceFirstAppPkg(args);
+        MethodParameterUtils.replaceFirstAppPkg(args);
         return super.beforeCall(who, method, args);
     }
 
     @Override
-    public String getName() {
+    public String getMethodName() {
         return "removeUpdates";
     }
 
@@ -31,7 +30,7 @@ public class Interceptor_RemoveUpdates extends InterceptorHook {
     }
 
     @Override
-    public Class<? extends PatchDelegate> getDelegatePatch() {
-        return LocationManagerPatch.class;
+    public Class<? extends MethodInvocationProxy> getDelegatePatch() {
+        return LocationManagerStub.class;
     }
 }

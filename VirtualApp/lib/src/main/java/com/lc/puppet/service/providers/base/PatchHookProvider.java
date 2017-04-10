@@ -1,11 +1,11 @@
 package com.lc.puppet.service.providers.base;
 
+import java.util.HashMap;
+
 import com.lc.puppet.storage.IObFlow;
 import com.lc.puppet.storage.IObIndex;
 import com.lc.puppet.storage.PaperFlow;
-import com.lody.virtual.client.hook.base.PatchDelegate;
-
-import java.util.HashMap;
+import com.lody.virtual.client.hook.base.MethodInvocationProxy;
 
 /**
  * @author legency
@@ -25,7 +25,7 @@ public abstract class PatchHookProvider {
         hookDataProviders.put(hookDataProvider.getName(), hookDataProvider);
     }
 
-    abstract public Class<? extends PatchDelegate> getDelegatePatch();
+    abstract public Class<? extends MethodInvocationProxy> getDelegatePatch();
 
     protected <T> T callDataWithCreator(String key, IDataCreator<T> paperDataCreator) {
         return paperDataCreator.exec(key);
@@ -60,6 +60,7 @@ public abstract class PatchHookProvider {
         }
 
 
+        @Override
         public T exec(String key) {
             T o = get().get(key);
             return o == null ? createFakeData() : o;

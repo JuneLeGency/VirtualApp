@@ -8,10 +8,12 @@ import java.util.Locale;
 
 public class StubManifest {
     public static final String STUB_DEF_AUTHORITY = "virtual_stub_";
+    public static final boolean ENABLE_GMS = false;
     public static String STUB_ACTIVITY = StubActivity.class.getName();
     public static String STUB_DIALOG = StubDialog.class.getName();
     public static String STUB_CP = StubContentProvider.class.getName();
     public static String STUB_JOB = StubJob.class.getName();
+    public static String RESOLVER_ACTIVITY = ResolverActivity.class.getName();
     public static String STUB_CP_AUTHORITY = "virtual_stub_";
     public static int STUB_COUNT = 50;
 
@@ -45,4 +47,5 @@ public class StubManifest {
     public static String getStubAuthority(int index) {
         return String.format(Locale.ENGLISH, "%s%d", STUB_CP_AUTHORITY, index);
     }
+
 }

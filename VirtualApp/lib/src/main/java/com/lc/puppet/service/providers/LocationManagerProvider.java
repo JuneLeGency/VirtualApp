@@ -13,8 +13,8 @@ import android.util.Log;
 import com.lc.puppet.service.providers.base.PatchHookProvider;
 import com.lc.puppet.storage.IObFlowBase;
 import com.lc.puppet.storage.IObIndex;
-import com.lody.virtual.client.hook.base.PatchDelegate;
-import com.lody.virtual.client.hook.patchs.location.LocationManagerPatch;
+import com.lody.virtual.client.hook.base.MethodInvocationProxy;
+import com.lody.virtual.client.hook.proxies.location.LocationManagerStub;
 import com.lody.virtual.helper.utils.Reflect;
 
 import java.util.HashMap;
@@ -38,8 +38,8 @@ public class LocationManagerProvider extends PatchHookProvider {
 
 
     @Override
-    public Class<? extends PatchDelegate> getDelegatePatch() {
-        return LocationManagerPatch.class;
+    public Class<? extends MethodInvocationProxy> getDelegatePatch() {
+        return LocationManagerStub.class;
     }
 
     /**

@@ -8,7 +8,7 @@ package com.lc.puppet.client.hook.patch.hook.telephony;
 public class Interceptor_GetAllCellInfoUsingSubId extends BaseInterceptorTelephony {
 
     @Override
-    public String getName() {
+    public String getMethodName() {
         return "getAllCellInfoUsingSubId";
     }
 

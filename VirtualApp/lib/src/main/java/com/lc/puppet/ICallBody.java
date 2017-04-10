@@ -3,7 +3,7 @@ package com.lc.puppet;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-import com.lc.puppet.client.hook.base.InterceptorHook;
+import com.lc.puppet.client.hook.base.InterceptorMethod;
 
 import java.util.Arrays;
 
@@ -30,13 +30,13 @@ public class ICallBody implements Parcelable {
         dest.writeArray(args);
     }
 
-    public static ICallBody create(InterceptorHook interceptorHook){
-        return new ICallBody(interceptorHook);
+    public static ICallBody create(InterceptorMethod interceptorMethod){
+        return new ICallBody(interceptorMethod);
     }
 
-    public ICallBody(InterceptorHook interceptorHook) {
-        module = interceptorHook.getDelegatePatch().getCanonicalName();
-        method = interceptorHook.getName();
+    public ICallBody(InterceptorMethod interceptorMethod) {
+        module = interceptorMethod.getDelegatePatch().getCanonicalName();
+        method = interceptorMethod.getMethodName();
     }
 
     public ICallBody arg(Object... par) {

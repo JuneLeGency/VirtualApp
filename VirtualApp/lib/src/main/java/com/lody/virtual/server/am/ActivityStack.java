@@ -14,11 +14,11 @@ import android.util.SparseArray;
 import com.lody.virtual.client.core.VirtualCore;
 import com.lody.virtual.client.env.VirtualRuntime;
 import com.lody.virtual.client.stub.StubManifest;
-import com.lody.virtual.helper.proto.AppTaskInfo;
-import com.lody.virtual.helper.proto.StubActivityRecord;
 import com.lody.virtual.helper.utils.ArrayUtils;
 import com.lody.virtual.helper.utils.ClassUtils;
 import com.lody.virtual.helper.utils.ComponentUtils;
+import com.lody.virtual.remote.AppTaskInfo;
+import com.lody.virtual.remote.StubActivityRecord;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -29,6 +29,7 @@ import mirror.android.app.ActivityThread;
 import mirror.android.app.IApplicationThread;
 import mirror.com.android.internal.R_Hide;
 
+import static android.content.pm.ActivityInfo.FLAG_NO_HISTORY;
 import static android.content.pm.ActivityInfo.LAUNCH_SINGLE_INSTANCE;
 import static android.content.pm.ActivityInfo.LAUNCH_SINGLE_TASK;
 import static android.content.pm.ActivityInfo.LAUNCH_SINGLE_TOP;
@@ -74,11 +75,16 @@ import static android.content.pm.ActivityInfo.LAUNCH_SINGLE_TOP;
     }
 
     private void deliverNewIntentLocked(ActivityRecord sourceRecord, ActivityRecord targetRecord, Intent intent) {
+        if (targetRecord == null) {
+            return;
+        }
         String creator = sourceRecord != null ? sourceRecord.component.getPackageName() : "android";
         try {
             targetRecord.process.client.scheduleNewIntent(creator, targetRecord.token, intent);
         } catch (RemoteException e) {
             e.printStackTrace();
+        } catch (NullPointerException npe) {
+            npe.printStackTrace();
         }
     }
 
@@ -199,7 +205,6 @@ import static android.content.pm.ActivityInfo.LAUNCH_SINGLE_TOP;
 
     int startActivityLocked(int userId, Intent intent, ActivityInfo info, IBinder resultTo, Bundle options,
                             String resultWho, int requestCode) {
-
         optimizeTasksLocked();
 
         Intent destIntent;
@@ -242,9 +247,7 @@ import static android.content.pm.ActivityInfo.LAUNCH_SINGLE_TOP;
 
         switch (info.launchMode) {
             case LAUNCH_SINGLE_TOP: {
-                if (!clearTop) {
-                    singleTop = true;
-                }
+                singleTop = true;
                 if (containFlags(intent, Intent.FLAG_ACTIVITY_NEW_TASK)) {
                     reuseTarget = containFlags(intent, Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
                             ? ReuseTarget.MULTIPLE
@@ -309,7 +312,7 @@ import static android.content.pm.ActivityInfo.LAUNCH_SINGLE_TOP;
             if (clearTarget.deliverIntent || singleTop) {
                 taskMarked = markTaskByClearTarget(reuseTask, clearTarget, intent.getComponent());
                 ActivityRecord topRecord = topActivityInTask(reuseTask);
-                if (clearTop && topRecord != null && taskMarked) {
+                if (clearTop && !singleTop && topRecord != null && taskMarked) {
                     topRecord.marked = true;
                 }
                 // Target activity is on top
@@ -320,12 +323,8 @@ import static android.content.pm.ActivityInfo.LAUNCH_SINGLE_TOP;
             }
             if (taskMarked) {
                 synchronized (mHistory) {
-                    scheduleFinishMarkedActivity();
+                    scheduleFinishMarkedActivityLocked();
                 }
-            }
-            if (reuseTask.isFinishing()) {
-                startActivityInNewTaskLocked(userId, intent, info, options);
-                delivered = true;
             }
             if (!startTaskToFront) {
                 if (!delivered) {
@@ -362,7 +361,7 @@ import static android.content.pm.ActivityInfo.LAUNCH_SINGLE_TOP;
         return destIntent;
     }
 
-    private void scheduleFinishMarkedActivity() {
+    private void scheduleFinishMarkedActivityLocked() {
         int N = mHistory.size();
         while (N-- > 0) {
             final TaskRecord task = mHistory.valueAt(N);
@@ -469,6 +468,9 @@ import static android.content.pm.ActivityInfo.LAUNCH_SINGLE_TOP;
             component = ComponentUtils.toComponentName(info);
         }
         targetIntent.setType(component.flattenToString());
+        if ((info.flags & FLAG_NO_HISTORY) != 0 || containFlags(intent, Intent.FLAG_ACTIVITY_NO_HISTORY)) {
+            targetIntent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+        }
         StubActivityRecord saveInstance = new StubActivityRecord(intent, info,
                 sourceRecord != null ? sourceRecord.component : null, userId);
         saveInstance.saveToIntent(targetIntent);
@@ -593,6 +595,14 @@ import static android.content.pm.ActivityInfo.LAUNCH_SINGLE_TOP;
         }
     }
 
+    private boolean hasActivity(ActivityRecord topRecord, ComponentName component) {
+        for (ActivityRecord ar : topRecord.task.activities) {
+            if (component.equals(ar.component)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     private enum ClearTarget {
         NOTHING,

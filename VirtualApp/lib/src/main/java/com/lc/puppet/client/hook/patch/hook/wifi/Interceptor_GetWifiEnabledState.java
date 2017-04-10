@@ -1,8 +1,8 @@
 package com.lc.puppet.client.hook.patch.hook.wifi;
 
-import android.net.wifi.WifiManager;
-
 import java.lang.reflect.Method;
+
+import android.net.wifi.WifiManager;
 
 /**
  * @author legency
@@ -10,7 +10,7 @@ import java.lang.reflect.Method;
 public class Interceptor_GetWifiEnabledState extends BaseInterceptorWifi {
 
     @Override
-    public String getName() {
+    public String getMethodName() {
         return "getWifiEnabledState";
     }
 
