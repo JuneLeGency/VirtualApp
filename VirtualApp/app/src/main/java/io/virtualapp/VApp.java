@@ -13,6 +13,7 @@ import io.virtualapp.delegate.MyComponentDelegate;
 import io.virtualapp.delegate.MyPhoneInfoDelegate;
 import io.virtualapp.delegate.MyTaskDescriptionDelegate;
 import jonathanfinerty.once.Once;
+import june.legency.env.activities.MainActivity;
 
 /**
  * @author Lody
@@ -29,6 +30,7 @@ public class VApp extends Application {
     @Override
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(base);
+        MainActivity.debugFolder(this);
         StubManifest.ENABLE_IO_REDIRECT = true;
         StubManifest.ENABLE_INNER_SHORTCUT = false;
         try {

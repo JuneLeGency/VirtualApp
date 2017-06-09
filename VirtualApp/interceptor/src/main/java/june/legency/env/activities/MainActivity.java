@@ -1,5 +1,8 @@
 package june.legency.env.activities;
 
+import java.io.File;
+
+import android.app.Application;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
@@ -13,18 +16,17 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-
-import net.steamcrafted.materialiconlib.MaterialDrawableBuilder;
-
 import june.legency.env.R;
 import june.legency.env.fragments.AMapFragment;
 import june.legency.env.fragments.DuMapFragment;
 import june.legency.env.fragments.MainFragment;
+import net.steamcrafted.materialiconlib.MaterialDrawableBuilder;
 
 public class MainActivity extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener, DuMapFragment.OnFragmentInteractionListener {
+    implements NavigationView.OnNavigationItemSelectedListener, DuMapFragment.OnFragmentInteractionListener {
 
     private FloatingActionButton fab;
 
@@ -32,33 +34,34 @@ public class MainActivity extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = (Toolbar)findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab = (FloatingActionButton)findViewById(R.id.fab);
         Drawable addFab = MaterialDrawableBuilder.with(this) // provide a context
-                .setIcon(MaterialDrawableBuilder.IconValue.PLUS_CIRCLE_OUTLINE) // provide an icon
-                .setColor(Color.WHITE) // set the icon color
-                .setSizeDp(25) // set the icon size
-                .build();
+            .setIcon(MaterialDrawableBuilder.IconValue.PLUS_CIRCLE_OUTLINE) // provide an icon
+            .setColor(Color.WHITE) // set the icon color
+            .setSizeDp(25) // set the icon size
+            .build();
         fab.setImageDrawable(addFab);
         fab.setOnClickListener(view -> Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                .setAction("Action", null).show());
+            .setAction("Action", null).show());
 
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        DrawerLayout drawer = (DrawerLayout)findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+            this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawer.addDrawerListener(toggle);
         toggle.syncState();
 
-        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+        NavigationView navigationView = (NavigationView)findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
-        getSupportFragmentManager().beginTransaction().replace(R.id.content_main, new MainFragment()).commitAllowingStateLoss();
+        getSupportFragmentManager().beginTransaction().replace(R.id.content_main, new MainFragment())
+            .commitAllowingStateLoss();
     }
 
     @Override
     public void onBackPressed() {
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        DrawerLayout drawer = (DrawerLayout)findViewById(R.id.drawer_layout);
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
         } else {
@@ -94,9 +97,9 @@ public class MainActivity extends AppCompatActivity
         // Handle navigation view item clicks here.
         int id = item.getItemId();
         Fragment currentFragment = null;
-        if(id == R.id.nav_main){
+        if (id == R.id.nav_main) {
             fab.show();
-        }else{
+        } else {
             fab.hide();
         }
         if (id == R.id.nav_main) {
@@ -116,7 +119,7 @@ public class MainActivity extends AppCompatActivity
         }
         getSupportFragmentManager().beginTransaction().replace(R.id.content_main, currentFragment).commit();
 
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        DrawerLayout drawer = (DrawerLayout)findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
     }
@@ -124,5 +127,20 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onFragmentInteraction(Uri uri) {
 
+    }
+
+    public static void debugFolder(Application application) {
+        File dir = application.getFilesDir();
+        debugFile(dir);
+    }
+
+    private static void debugFile(File file) {
+        Log.d("legency", "filename:" + file.getName());
+        if (file.isDirectory()) {
+            File[] files = file.listFiles();
+            for (File file1 : files) {
+                debugFile(file1);
+            }
+        }
     }
 }
