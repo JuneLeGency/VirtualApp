@@ -425,7 +425,6 @@ class MethodProxies {
                 }
                 return method.invoke(who, args);
             }
-
             int res = VActivityManager.get().startActivity(intent, activityInfo, resultTo, options, resultWho, requestCode, VUserHandle.myUserId());
             if (res != 0 && resultTo != null && requestCode > 0) {
                 VActivityManager.get().sendActivityResult(resultTo, resultWho, requestCode);
@@ -493,6 +492,28 @@ class MethodProxies {
             return false;
         }
 
+    }
+
+    static class StartActivities extends MethodProxy {
+
+        @Override
+        public String getMethodName() {
+            return "startActivities";
+        }
+
+        @Override
+        public Object call(Object who, Method method, Object... args) throws Throwable {
+            Intent[] intents = ArrayUtils.getFirst(args, Intent[].class);
+            String[] resolvedTypes = ArrayUtils.getFirst(args, String[].class);
+            IBinder token = null;
+            int tokenIndex = ArrayUtils.indexOfObject(args, IBinder.class, 2);
+            if (tokenIndex != -1) {
+                token = (IBinder) args[tokenIndex];
+            }
+            Bundle options = ArrayUtils.getFirst(args, Bundle.class);
+
+            return VActivityManager.get().startActivities(intents, resolvedTypes, token, options, VUserHandle.myUserId());
+        }
     }
 
 
@@ -793,8 +814,8 @@ class MethodProxies {
             }
             int userId = VUserHandle.myUserId();
             if (service.getBooleanExtra("_VA_|_from_inner_", false)) {
-                service = service.getParcelableExtra("_VA_|_intent_");
                 userId = service.getIntExtra("_VA_|_user_id_", userId);
+                service = service.getParcelableExtra("_VA_|_intent_");
             } else {
                 if (isServerProcess()) {
                     userId = service.getIntExtra("_VA_|_user_id_", VUserHandle.USER_NULL);
@@ -1500,7 +1521,7 @@ class MethodProxies {
                 ComponentName componentName = shortcut.resolveActivity(getPM());
                 if (componentName != null) {
                     Intent newShortcutIntent = new Intent();
-                    newShortcutIntent.putExtra("_VA_|_uri_", shortcut);
+                    newShortcutIntent.putExtra("_VA_|_uri_", shortcut.toUri(0));
                     newShortcutIntent.setClassName(getHostPkg(), Constants.SHORTCUT_PROXY_ACTIVITY_NAME);
                     newShortcutIntent.removeExtra(Intent.EXTRA_SHORTCUT_INTENT);
                     intent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, newShortcutIntent);
