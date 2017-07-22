@@ -1,11 +1,10 @@
-package com.lody.virtual.client.hook.secondary;
+package com.lody.virtual;
 
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 
 import com.lody.virtual.client.core.InstallStrategy;
 import com.lody.virtual.client.core.VirtualCore;
-import com.lody.virtual.server.pm.VAppManagerService;
 
 import java.util.Arrays;
 import java.util.List;
@@ -37,7 +36,6 @@ public class GmsSupport {
             "com.google.android.syncadapters.calendar"
     );
 
-
     public static boolean isGmsFamilyPackage(String packageName) {
         return packageName.equals("com.android.vending")
                 || packageName.equals("com.google.android.gms");
@@ -47,10 +45,14 @@ public class GmsSupport {
         return VirtualCore.get().isAppInstalled("com.google.android.gms");
     }
 
+    public static boolean isOutsideGoogleFrameworkExist() {
+        return VirtualCore.get().isOutsideInstalled("com.google.android.gms");
+    }
+
     private static void installPackages(List<String> list, int userId) {
-        VAppManagerService service = VAppManagerService.get();
+        VirtualCore core = VirtualCore.get();
         for (String packageName : list) {
-            if (service.isAppInstalledAsUser(userId, packageName)) {
+            if (core.isAppInstalledAsUser(userId, packageName)) {
                 continue;
             }
             ApplicationInfo info = null;
@@ -63,15 +65,23 @@ public class GmsSupport {
                 continue;
             }
             if (userId == 0) {
-                service.installPackage(info.sourceDir, InstallStrategy.DEPEND_SYSTEM_IF_EXIST, false);
+                core.installPackage(info.sourceDir, InstallStrategy.DEPEND_SYSTEM_IF_EXIST);
             } else {
-                service.installPackageAsUser(userId, packageName);
+                core.installPackageAsUser(userId, packageName);
             }
         }
     }
 
-    public static void installGms(int userId) {
+    public static void installGApps(int userId) {
         installPackages(GOOGLE_SERVICE, userId);
+        installPackages(GOOGLE_APP, userId);
+    }
+
+    public static void installGoogleService(int userId) {
+        installPackages(GOOGLE_SERVICE, userId);
+    }
+
+    public static void installGoogleApp(int userId) {
         installPackages(GOOGLE_APP, userId);
     }
 }
