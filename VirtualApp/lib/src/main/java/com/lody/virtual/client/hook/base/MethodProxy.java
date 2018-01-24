@@ -7,6 +7,7 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import com.lody.virtual.client.VClientImpl;
 import com.lody.virtual.client.core.VirtualCore;
+import com.lody.virtual.client.ipc.VirtualLocationManager;
 import com.lody.virtual.helper.utils.ComponentUtils;
 import com.lody.virtual.os.VUserHandle;
 import com.lody.virtual.remote.VDeviceInfo;
@@ -30,6 +31,10 @@ public abstract class MethodProxy {
         return VirtualCore.get().getHostPkg();
     }
 
+    public static String getAppPkg() {
+        return VClientImpl.get().getCurrentPackage();
+    }
+
     protected static Context getHostContext() {
         return VirtualCore.get().getContext();
     }
@@ -50,7 +55,7 @@ public abstract class MethodProxy {
         return VClientImpl.get().getVUid();
     }
 
-    protected static int getAppUserId() {
+    public static int getAppUserId() {
         return VUserHandle.getUserId(getVUid());
     }
 
@@ -64,6 +69,10 @@ public abstract class MethodProxy {
 
     protected static VDeviceInfo getDeviceInfo() {
         return VClientImpl.get().getDeviceInfo();
+    }
+
+    protected static boolean isFakeLocationEnable() {
+        return VirtualLocationManager.get().getMode(VUserHandle.myUserId(), VClientImpl.get().getCurrentPackage()) != 0;
     }
 
     public static boolean isVisiblePackage(ApplicationInfo info) {

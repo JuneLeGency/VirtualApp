@@ -2,11 +2,6 @@
 
 [中国人猛戳这里](CHINESE.md "中文")
 
-TO NoxApp+ Developer
---------
-You have no authorization, Please contact me as soon as possible.
-
-
 About
 -----
 **VirtualApp** is an open platform for Android that allows you to create a `Virtual Space`,
@@ -75,11 +70,7 @@ Documentation
 
 VirtualApp currently has **no documentation**, If you are interested in VirtualApp, please send email to me.
 
-License
--------
-GPL 3.0
-
-About Author
+Contact us
 ------------
 
-    Lody (imlody@foxmail.com)
+    zl@aluohe.com

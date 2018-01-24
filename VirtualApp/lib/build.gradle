@@ -10,7 +10,7 @@ android {
         versionName "1.0"
         externalNativeBuild {
             ndkBuild {
-                abiFilters "armeabi", "armeabi-v7a", "x86"
+                abiFilters "armeabi-v7a", "x86"
             }
         }
     }
@@ -33,6 +33,7 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+
 }
 
 
@@ -41,6 +42,4 @@ dependencies {
     //    compile 'net.lingala.zip4j:zip4j:1.3.2'
     compile 'io.paperdb:paperdb:2.0'
     compile 'org.immutables:gson:2.4.2'
-    compile files('src/main/libs/android-art-interpret-3.0.0.jar')
-    compile files('src/main/libs/dalvik_hack-3.0.0.5.jar')
 }
