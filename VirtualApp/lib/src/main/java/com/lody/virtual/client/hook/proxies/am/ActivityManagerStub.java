@@ -4,6 +4,7 @@ import java.lang.reflect.Method;
 import java.util.List;
 
 import android.app.ActivityManager;
+import android.app.ActivityManager.RecentTaskInfo;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
@@ -90,8 +91,8 @@ public class ActivityManagerStub extends MethodInvocationProxy<MethodInvocationS
                     //noinspection unchecked
                     List<ActivityManager.RecentTaskInfo> infos =
                             ParceledListSliceCompat.isReturnParceledListSlice(method)
-                                    ? ParceledListSlice.getList.call(_infos)
-                                    : (List) _infos;
+                                    ? (List<RecentTaskInfo>)ParceledListSlice.getList.call(_infos)
+                                : (List) _infos;
                     for (ActivityManager.RecentTaskInfo info : infos) {
                         AppTaskInfo taskInfo = VActivityManager.get().getTaskInfo(info.id);
                         if (taskInfo == null) {

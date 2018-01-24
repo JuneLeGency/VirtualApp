@@ -1,8 +1,7 @@
 apply plugin: 'com.android.library'
-
 android {
     compileSdkVersion 24
-    buildToolsVersion "25.0.2"
+    buildToolsVersion '26.0.2'
 
     defaultConfig {
         minSdkVersion 14
@@ -29,6 +28,10 @@ android {
     lintOptions {
         //IJobService need NewApi
         warning 'NewApi','OnClick'
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 }
 
