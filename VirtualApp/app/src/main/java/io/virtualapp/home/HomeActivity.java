@@ -7,9 +7,16 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.PowerManager;
+import android.os.Process;
+import android.os.RemoteException;
+import android.os.SystemClock;
+import android.provider.Settings;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.OrientationHelper;
@@ -25,22 +32,22 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.lody.virtual.GmsSupport;
-import com.lody.virtual.client.stub.ChooseTypeAndAccountActivity;
-import com.lody.virtual.os.VUserInfo;
-import com.lody.virtual.os.VUserManager;
+import com.lody.virtual.client.core.VirtualCore;
+import com.lody.virtual.helper.utils.DeviceUtil;
 
+import java.io.File;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.List;
 
 import io.virtualapp.R;
+import io.virtualapp.VApp;
 import io.virtualapp.VCommends;
+import io.virtualapp.about.AboutActivity;
 import io.virtualapp.abs.nestedadapter.SmartRecyclerAdapter;
 import io.virtualapp.abs.ui.VActivity;
 import io.virtualapp.abs.ui.VUiKit;
 import io.virtualapp.home.adapters.LaunchpadAdapter;
 import io.virtualapp.home.adapters.decorations.ItemOffsetDecoration;
-import io.virtualapp.home.location.VirtualLocationSettings;
 import io.virtualapp.home.models.AddAppButton;
 import io.virtualapp.home.models.AppData;
 import io.virtualapp.home.models.AppInfoLite;
@@ -77,6 +84,32 @@ public class HomeActivity extends VActivity implements HomeContract.HomeView {
     private LaunchpadAdapter mLaunchpadAdapter;
     private Handler mUiHandler;
 
+    //region ---------------package observer---------------
+    private VirtualCore.PackageObserver mPackageObserver = new VirtualCore.PackageObserver() {
+        @Override
+        public void onPackageInstalled(String packageName) throws RemoteException {
+            if (!isForground) {
+                runOnUiThread(() -> mPresenter.dataChanged());
+            }
+        }
+
+        @Override
+        public void onPackageUninstalled(String packageName) throws RemoteException {
+            if (!isForground) {
+                runOnUiThread(() -> mPresenter.dataChanged());
+            }
+        }
+
+        @Override
+        public void onPackageInstalledAsUser(int userId, String packageName) throws RemoteException {
+        }
+
+        @Override
+        public void onPackageUninstalledAsUser(int userId, String packageName) throws RemoteException {
+        }
+    };
+    private boolean isForground = false;
+    //endregion
 
     public static void goHome(Context context) {
         Intent intent = new Intent(context, HomeActivity.class);
@@ -95,49 +128,72 @@ public class HomeActivity extends VActivity implements HomeContract.HomeView {
         initLaunchpad();
         initMenu();
         new HomePresenterImpl(this).start();
+        VirtualCore.get().registerObserver(mPackageObserver);
+        alertForMeizu();
+        alertForDoze();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        isForground = true;
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        isForground = false;
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        VirtualCore.get().unregisterObserver(mPackageObserver);
     }
 
     private void initMenu() {
         mPopupMenu = new PopupMenu(new ContextThemeWrapper(this, R.style.Theme_AppCompat_Light), mMenuView);
         Menu menu = mPopupMenu.getMenu();
         setIconEnable(menu, true);
-        menu.add("Accounts").setIcon(R.drawable.ic_account).setOnMenuItemClickListener(item -> {
-            List<VUserInfo> users = VUserManager.get().getUsers();
-            List<String> names = new ArrayList<>(users.size());
-            for (VUserInfo info : users) {
-                names.add(info.name);
-            }
-            CharSequence[] items = new CharSequence[names.size()];
-            for (int i = 0; i < names.size(); i++) {
-                items[i] = names.get(i);
-            }
-            new AlertDialog.Builder(this)
-                    .setTitle("Please select an user")
-                    .setItems(items, (dialog, which) -> {
-                        VUserInfo info = users.get(which);
-                        Intent intent = new Intent(this, ChooseTypeAndAccountActivity.class);
-                        intent.putExtra(ChooseTypeAndAccountActivity.KEY_USER_ID, info.id);
-                        startActivity(intent);
-                    }).show();
-            return false;
-        });
-        menu.add("Virtual Storage").setIcon(R.drawable.ic_vs).setOnMenuItemClickListener(item -> {
-            Toast.makeText(this, "The coming", Toast.LENGTH_SHORT).show();
-            return false;
-        });
-        menu.add("Notification").setIcon(R.drawable.ic_notification).setOnMenuItemClickListener(item -> {
-            Toast.makeText(this, "The coming", Toast.LENGTH_SHORT).show();
-            return false;
-        });
-        menu.add("Virtual Location").setIcon(R.drawable.ic_notification).setOnMenuItemClickListener(item -> {
-            startActivity(new Intent(this, VirtualLocationSettings.class));
+
+        menu.add(getResources().getString(R.string.menu_about)).setIcon(R.drawable.ic_settings).setOnMenuItemClickListener(item -> {
+            startActivity(new Intent(HomeActivity.this, AboutActivity.class));
             return true;
         });
-        menu.add("Settings").setIcon(R.drawable.ic_settings).setOnMenuItemClickListener(item -> {
-            Toast.makeText(this, "The coming", Toast.LENGTH_SHORT).show();
-            return false;
+
+        menu.add(getResources().getString(R.string.menu_reboot)).setIcon(R.drawable.ic_reboot).setOnMenuItemClickListener(item -> {
+            VirtualCore.get().killAllApps();
+            showRebootTips();
+            return true;
         });
         mMenuView.setOnClickListener(v -> mPopupMenu.show());
+    }
+
+    long lastClickRebootTime = 0;
+    int continuousClickCount = 0;
+    private void showRebootTips() {
+        final long INTERVAL = 2000;
+        long now = SystemClock.elapsedRealtime();
+        if (now - lastClickRebootTime > INTERVAL) {
+            Toast.makeText(this, R.string.reboot_tips_1, Toast.LENGTH_SHORT).show();
+            // valid click, reset
+            continuousClickCount = 0;
+        } else {
+            continuousClickCount++;
+            switch (continuousClickCount) {
+                case 1:
+                    Toast.makeText(this, R.string.reboot_tips_2, Toast.LENGTH_SHORT).show();
+                    break;
+                case 3:
+                    Toast.makeText(this, R.string.reboot_tips_3, Toast.LENGTH_SHORT).show();
+                    mUiHandler.postDelayed(() -> Process.killProcess(Process.myPid()), 1000);
+                    break;
+                default:
+                    Toast.makeText(this, R.string.reboot_tips_1, Toast.LENGTH_SHORT).show();
+                    break;
+            }
+        }
+        lastClickRebootTime = now;
     }
 
     private static void setIconEnable(Menu menu, boolean enable) {
@@ -191,18 +247,30 @@ public class HomeActivity extends VActivity implements HomeContract.HomeView {
     }
 
     private void deleteApp(int position) {
-        AppData data = mLaunchpadAdapter.getList().get(position);
-        new AlertDialog.Builder(this)
+        List<AppData> mLaunchpadAdapterList = mLaunchpadAdapter.getList();
+        if (position >= mLaunchpadAdapterList.size() || position < 0) {
+            return;
+        }
+        AppData data = mLaunchpadAdapterList.get(position);
+        AlertDialog alertDialog = new AlertDialog.Builder(this)
                 .setTitle("Delete app")
                 .setMessage("Do you want to delete " + data.getName() + "?")
                 .setPositiveButton(android.R.string.yes, (dialog, which) -> {
                     mPresenter.deleteApp(data);
                 })
                 .setNegativeButton(android.R.string.no, null)
-                .show();
+                .create();
+        try {
+            alertDialog.show();
+        } catch (Throwable ignored) {
+            // BadTokenException.
+        }
     }
 
     private void createShortcut(int position) {
+        if (position < 0) {
+            return;
+        }
         AppData model = mLaunchpadAdapter.getList().get(position);
         if (model instanceof PackageAppData || model instanceof MultiplePackageAppData) {
             mPresenter.createShortcut(model);
@@ -283,6 +351,9 @@ public class HomeActivity extends VActivity implements HomeContract.HomeView {
     @Override
     public void addAppToLauncher(AppData model) {
         List<AppData> dataList = mLaunchpadAdapter.getList();
+        if (dataList == null) {
+            return;
+        }
         boolean replaced = false;
         for (int i = 0; i < dataList.size(); i++) {
             AppData data = dataList.get(i);
@@ -333,8 +404,15 @@ public class HomeActivity extends VActivity implements HomeContract.HomeView {
         if (resultCode == RESULT_OK && data != null) {
             List<AppInfoLite> appList = data.getParcelableArrayListExtra(VCommends.EXTRA_APP_INFO_LIST);
             if (appList != null) {
+                boolean showTip = false;
                 for (AppInfoLite info : appList) {
+                    if (new File(info.path).length() > 1024 * 1024 * 24) {
+                        showTip = true;
+                    }
                     mPresenter.addApp(info);
+                }
+                if (showTip) {
+                    Toast.makeText(this, R.string.large_app_install_tips, Toast.LENGTH_SHORT).show();
                 }
             }
         }
@@ -411,7 +489,9 @@ public class HomeActivity extends VActivity implements HomeContract.HomeView {
             }
             try {
                 AppData data = mLaunchpadAdapter.getList().get(target.getAdapterPosition());
-                return data.canReorder();
+                if (data != null) {
+                    return data.canReorder();
+                }
             } catch (IndexOutOfBoundsException e) {
                 e.printStackTrace();
             }
@@ -478,6 +558,55 @@ public class HomeActivity extends VActivity implements HomeContract.HomeView {
                 mDeleteAppTextView.setTextColor(Color.WHITE);
                 mCreateShortcutTextView.setTextColor(Color.WHITE);
             }
+        }
+    }
+
+    private void alertForMeizu() {
+        if (!DeviceUtil.isMeizuBelowN()) {
+            return;
+        }
+        boolean isXposedInstalled = VirtualCore.get().isAppInstalled(VApp.XPOSED_INSTALLER_PACKAGE);
+        if (isXposedInstalled) {
+            return;
+        }
+        mUiHandler.postDelayed(() -> {
+            AlertDialog alertDialog = new AlertDialog.Builder(getContext())
+                    .setTitle(R.string.meizu_device_tips_title)
+                    .setMessage(R.string.meizu_device_tips_content)
+                    .setPositiveButton(android.R.string.yes, (dialog, which) -> {
+                    })
+                    .create();
+            try {
+                alertDialog.show();
+            } catch (Throwable ignored) {}
+        }, 2000);
+    }
+
+    private void alertForDoze() {
+        if(Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            return;
+        }
+        PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
+        if (powerManager == null) {
+            return;
+        }
+        String packageName = getPackageName();
+        boolean ignoringBatteryOptimizations = powerManager.isIgnoringBatteryOptimizations(packageName);
+        if (!ignoringBatteryOptimizations) {
+
+            mUiHandler.postDelayed(() -> {
+                AlertDialog alertDialog = new AlertDialog.Builder(getContext())
+                        .setTitle(R.string.alert_for_doze_mode_title)
+                        .setMessage(R.string.alert_for_doze_mode_content)
+                        .setPositiveButton(R.string.alert_for_doze_mode_yes, (dialog, which) -> {
+                            startActivity(new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                                    Uri.parse("package:" + packageName)));
+                        })
+                        .create();
+                try {
+                    alertDialog.show();
+                } catch (Throwable ignored) {}
+            }, 3000);
         }
     }
 }

@@ -7,6 +7,8 @@ import android.graphics.drawable.Drawable;
 
 import com.lody.virtual.remote.InstalledAppInfo;
 
+import io.virtualapp.VApp;
+
 /**
  * @author Lody
  */
@@ -18,11 +20,17 @@ public class PackageAppData implements AppData {
     public boolean fastOpen;
     public boolean isFirstOpen;
     public boolean isLoading;
+    public boolean isInstalling;
 
     public PackageAppData(Context context, InstalledAppInfo installedAppInfo) {
         this.packageName = installedAppInfo.packageName;
         this.isFirstOpen = !installedAppInfo.isLaunched(0);
         loadData(context, installedAppInfo.getApplicationInfo(installedAppInfo.getInstalledUsers()[0]));
+    }
+
+    public PackageAppData(Context context, ApplicationInfo appInfo) {
+        this.packageName = appInfo.packageName;
+        loadData(context, appInfo);
     }
 
     private void loadData(Context context, ApplicationInfo appInfo) {
@@ -39,6 +47,11 @@ public class PackageAppData implements AppData {
         } catch (Throwable e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public boolean isInstalling() {
+        return isInstalling;
     }
 
     @Override
@@ -63,6 +76,9 @@ public class PackageAppData implements AppData {
 
     @Override
     public boolean canReorder() {
+        if (VApp.XPOSED_INSTALLER_PACKAGE.equals(packageName)) {
+            return false;
+        }
         return true;
     }
 

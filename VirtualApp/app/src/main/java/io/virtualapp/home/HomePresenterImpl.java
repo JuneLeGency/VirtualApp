@@ -1,9 +1,11 @@
 package io.virtualapp.home;
 
 import android.app.Activity;
+import android.content.pm.PackageInfo;
 import android.graphics.Bitmap;
+import android.os.SystemClock;
+import android.widget.Toast;
 
-import com.lody.virtual.GmsSupport;
 import com.lody.virtual.client.core.VirtualCore;
 import com.lody.virtual.os.VUserInfo;
 import com.lody.virtual.os.VUserManager;
@@ -12,6 +14,8 @@ import com.lody.virtual.remote.InstalledAppInfo;
 
 import java.io.IOException;
 
+import io.virtualapp.R;
+import io.virtualapp.VApp;
 import io.virtualapp.VCommends;
 import io.virtualapp.abs.ui.VUiKit;
 import io.virtualapp.home.models.AppData;
@@ -47,10 +51,12 @@ class HomePresenterImpl implements HomeContract.HomePresenter {
             mView.showGuide();
             Once.markDone(VCommends.TAG_SHOW_ADD_APP_GUIDE);
         }
+        /*
+        Delete GMS Support, becuase it may conflict with xposed.
         if (!Once.beenDone(VCommends.TAG_ASK_INSTALL_GMS) && GmsSupport.isOutsideGoogleFrameworkExist()) {
             mView.askInstallGms();
             Once.markDone(VCommends.TAG_ASK_INSTALL_GMS);
-        }
+        }*/
     }
 
     @Override
@@ -73,9 +79,14 @@ class HomePresenterImpl implements HomeContract.HomePresenter {
     @Override
     public void dataChanged() {
         mView.showLoading();
-        mRepo.getVirtualApps().done(mView::loadFinish).fail(mView::loadError);
+        long start = SystemClock.elapsedRealtime();
+        mRepo.getVirtualApps().then(result -> {
+            long delta = 500 - (SystemClock.elapsedRealtime() - start);
+            if (delta > 0) {
+                SystemClock.sleep(delta);
+            }
+        }).done(mView::loadFinish).fail(mView::loadError);
     }
-
 
     @Override
     public void addApp(AppInfoLite info) {
@@ -83,11 +94,13 @@ class HomePresenterImpl implements HomeContract.HomePresenter {
             private PackageAppData appData;
             private int userId;
             private boolean justEnableHidden;
+            private boolean addedToLaucher;
         }
         AddResult addResult = new AddResult();
         VUiKit.defer().when(() -> {
             InstalledAppInfo installedAppInfo = VirtualCore.get().getInstalledAppInfo(info.packageName, 0);
             addResult.justEnableHidden = installedAppInfo != null;
+            addResult.addedToLaucher = false;
             if (addResult.justEnableHidden) {
                 int[] userIds = installedAppInfo.getInstalledUsers();
                 int nextUserId = userIds.length;
@@ -116,24 +129,52 @@ class HomePresenterImpl implements HomeContract.HomePresenter {
                     throw new IllegalStateException();
                 }
             } else {
+                PackageInfo pkgInfo = null;
+                try {
+                    pkgInfo = VApp.getApp().getPackageManager().getPackageArchiveInfo(info.path, 0);
+                    pkgInfo.applicationInfo.sourceDir = info.path;
+                    pkgInfo.applicationInfo.publicSourceDir = info.path;
+                } catch (Exception e) {
+                }
+                if(pkgInfo != null) {
+                    PackageAppData data = PackageAppDataStorage.get().acquire(pkgInfo.applicationInfo);
+                    addResult.appData = data;
+                    data.isInstalling = true;
+                    data.isFirstOpen = false;
+                    mView.addAppToLauncher(data);
+                    addResult.addedToLaucher = true;
+                }
+
                 InstallResult res = mRepo.addVirtualApp(info);
                 if (!res.isSuccess) {
+                    if (addResult.appData != null) mView.removeAppToLauncher(addResult.appData);
                     throw new IllegalStateException();
                 }
             }
         }).then((res) -> {
-            addResult.appData = PackageAppDataStorage.get().acquire(info.packageName);
+            if (addResult.appData == null) {
+                addResult.appData = PackageAppDataStorage.get().acquire(info.packageName);
+                addResult.addedToLaucher = false;
+            }
         }).done(res -> {
             boolean multipleVersion = addResult.justEnableHidden && addResult.userId != 0;
             if (!multipleVersion) {
                 PackageAppData data = addResult.appData;
+                data.isInstalling = false;
                 data.isLoading = true;
-                mView.addAppToLauncher(data);
+                if (addResult.addedToLaucher)
+                    mView.refreshLauncherItem(data);
+                else
+                    mView.addAppToLauncher(data);
                 handleOptApp(data, info.packageName, true);
             } else {
                 MultiplePackageAppData data = new MultiplePackageAppData(addResult.appData, addResult.userId);
+                data.isInstalling = false;
                 data.isLoading = true;
-                mView.addAppToLauncher(data);
+                if (addResult.addedToLaucher)
+                    mView.refreshLauncherItem(data);
+                else
+                    mView.addAppToLauncher(data);
                 handleOptApp(data, info.packageName, false);
             }
         });
@@ -195,14 +236,18 @@ class HomePresenterImpl implements HomeContract.HomePresenter {
 
             @Override
             public String getName(String originName) {
-                return originName + "(VA)";
+                return originName + "(VAE)";
             }
         };
+        boolean result = false;
         if (data instanceof PackageAppData) {
-            VirtualCore.get().createShortcut(0, ((PackageAppData) data).packageName, listener);
+            result = VirtualCore.get().createShortcut(0, ((PackageAppData) data).packageName, listener);
         } else if (data instanceof MultiplePackageAppData) {
             MultiplePackageAppData appData = (MultiplePackageAppData) data;
-            VirtualCore.get().createShortcut(appData.userId, appData.appInfo.packageName, listener);
+            result = VirtualCore.get().createShortcut(appData.userId, appData.appInfo.packageName, listener);
+        }
+        if (result) {
+            Toast.makeText(mActivity, R.string.create_shortcut_success, Toast.LENGTH_SHORT).show();
         }
     }
 

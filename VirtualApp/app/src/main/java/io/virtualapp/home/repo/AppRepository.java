@@ -8,6 +8,7 @@ import android.content.pm.PackageManager;
 import com.lody.virtual.GmsSupport;
 import com.lody.virtual.client.core.InstallStrategy;
 import com.lody.virtual.client.core.VirtualCore;
+import com.lody.virtual.helper.utils.DeviceUtil;
 import com.lody.virtual.remote.InstallResult;
 import com.lody.virtual.remote.InstalledAppInfo;
 
@@ -17,6 +18,7 @@ import java.io.File;
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
@@ -42,6 +44,8 @@ public class AppRepository implements AppDataSource {
             "pp/downloader",
             "pp/downloader/apk",
             "pp/downloader/silent/apk");
+
+    private static final int MAX_SCAN_DEPTH = 2;
 
     private Context mContext;
 
@@ -85,7 +89,48 @@ public class AppRepository implements AppDataSource {
 
     @Override
     public Promise<List<AppInfo>, Throwable, Void> getStorageApps(Context context, File rootDir) {
-        return VUiKit.defer().when(() -> convertPackageInfoToAppData(context, findAndParseAPKs(context, rootDir, SCAN_PATH_LIST), false));
+        // return VUiKit.defer().when(() -> convertPackageInfoToAppData(context, findAndParseAPKs(context, rootDir, SCAN_PATH_LIST), false));
+        return VUiKit.defer().when(() -> convertPackageInfoToAppData(context, findAndParseApkRecursively(context, rootDir,null, 0), false));
+    }
+
+    private List<PackageInfo> findAndParseApkRecursively(Context context, File rootDir, List<PackageInfo> result, int depth) {
+        if (result == null) {
+            result = new ArrayList<>();
+        }
+
+        if (depth > MAX_SCAN_DEPTH) {
+            return result;
+        }
+
+        File[] dirFiles = rootDir.listFiles();
+
+        if (dirFiles == null) {
+            return Collections.emptyList();
+        }
+
+        for (File f: dirFiles) {
+            if (f.isDirectory()) {
+                List<PackageInfo> andParseApkRecursively = findAndParseApkRecursively(context, f, new ArrayList<>(), depth + 1);
+                result.addAll(andParseApkRecursively);
+            }
+
+            if (!(f.isFile() && f.getName().toLowerCase().endsWith(".apk"))) {
+                continue;
+            }
+
+            PackageInfo pkgInfo = null;
+            try {
+                pkgInfo = context.getPackageManager().getPackageArchiveInfo(f.getAbsolutePath(), 0);
+                pkgInfo.applicationInfo.sourceDir = f.getAbsolutePath();
+                pkgInfo.applicationInfo.publicSourceDir = f.getAbsolutePath();
+            } catch (Exception e) {
+                // Ignore
+            }
+            if (pkgInfo != null) {
+                result.add(pkgInfo);
+            }
+        }
+        return result;
     }
 
     private List<PackageInfo> findAndParseAPKs(Context context, File rootDir, List<String> paths) {
@@ -138,6 +183,7 @@ public class AppRepository implements AppDataSource {
             info.path = path;
             info.icon = ai.loadIcon(pm);
             info.name = ai.loadLabel(pm);
+            info.version = pkg.versionName;
             InstalledAppInfo installedAppInfo = VirtualCore.get().getInstalledAppInfo(pkg.packageName, 0);
             if (installedAppInfo != null) {
                 info.cloneCount = installedAppInfo.getInstalledUsers().length;
@@ -150,6 +196,10 @@ public class AppRepository implements AppDataSource {
     @Override
     public InstallResult addVirtualApp(AppInfoLite info) {
         int flags = InstallStrategy.COMPARE_VERSION | InstallStrategy.SKIP_DEX_OPT;
+        info.fastOpen = false; // disable fast open for compile.
+        if (DeviceUtil.isMeizuBelowN()) {
+            info.fastOpen = true;
+        }
         if (info.fastOpen) {
             flags |= InstallStrategy.DEPEND_SYSTEM_IF_EXIST;
         }

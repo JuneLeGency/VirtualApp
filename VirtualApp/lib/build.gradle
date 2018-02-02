@@ -1,7 +1,7 @@
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 24
+    compileSdkVersion 26
     buildToolsVersion '26.0.2'
 
     defaultConfig {
@@ -29,10 +29,20 @@ android {
     lintOptions {
         //IJobService need NewApi
         warning 'NewApi','OnClick'
+        checkReleaseBuilds false
+        // Or, if you prefer, you can continue to check for errors in release builds,
+        // but continue the build even when errors are found:
+        abortOnError false
     }
 }
 
 
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
+//    compile 'com.github.android-hacker:exposed:0.3.6'
+    compile 'me.weishu.exposed:exposed-core:0.4.1'
+}
+
+repositories {
+    maven { url 'https://jitpack.io' }
 }
