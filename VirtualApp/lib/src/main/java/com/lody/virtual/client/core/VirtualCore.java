@@ -49,7 +49,8 @@ import com.lody.virtual.server.interfaces.IPackageObserver;
 import com.lody.virtual.server.interfaces.IUiCallback;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import dalvik.system.DexFile;
@@ -348,6 +349,22 @@ public final class VirtualCore {
         }
     }
 
+    public boolean clearPackage(String packageName) {
+        try {
+            return getService().clearPackage(packageName);
+        } catch (RemoteException e) {
+            return VirtualRuntime.crash(e);
+        }
+    }
+
+    public boolean clearPackageAsUser(int userId, String packageName) {
+        try {
+            return getService().clearPackageAsUser(userId, packageName);
+        } catch (RemoteException e) {
+            return VirtualRuntime.crash(e);
+        }
+    }
+
     public void addVisibleOutsidePackage(String pkg) {
         try {
             getService().addVisibleOutsidePackage(pkg);
@@ -493,8 +510,28 @@ public final class VirtualCore {
         if (shortcutManager == null) {
             return false;
         }
-        shortcutManager.addDynamicShortcuts(Arrays.asList(likeShortcut));
-        return true;
+        try {
+            int max = shortcutManager.getMaxShortcutCountPerActivity();
+            List<ShortcutInfo> dynamicShortcuts = shortcutManager.getDynamicShortcuts();
+            if (dynamicShortcuts.size() >= max) {
+                Collections.sort(dynamicShortcuts, new Comparator<ShortcutInfo>() {
+                    @Override
+                    public int compare(ShortcutInfo o1, ShortcutInfo o2) {
+                        long r = o1.getLastChangedTimestamp() - o2.getLastChangedTimestamp();
+                        return r == 0 ? 0 : (r > 0 ? 1 : -1);
+                    }
+                });
+
+                ShortcutInfo remove = dynamicShortcuts.remove(0);// remove old.
+                shortcutManager.removeDynamicShortcuts(Collections.singletonList(remove.getId()));
+            }
+
+            dynamicShortcuts.add(likeShortcut);
+            shortcutManager.addDynamicShortcuts(dynamicShortcuts);
+            return true;
+        } catch (Throwable e) {
+            return false;
+        }
     }
 
     @TargetApi(Build.VERSION_CODES.O)
