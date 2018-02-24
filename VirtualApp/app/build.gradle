@@ -1,15 +1,19 @@
 apply plugin: 'com.android.application'
+apply plugin: 'io.fabric'
 
+repositories {
+    maven { url 'https://maven.fabric.io/public' }
+}
 
 android {
     compileSdkVersion 26
     buildToolsVersion '26.0.2'
     defaultConfig {
         applicationId "io.va.exposed"
-        minSdkVersion 15
+        minSdkVersion 21
         targetSdkVersion 22
-        versionCode 47
-        versionName "0.4.7"
+        versionCode 69
+        versionName "0.6.9"
         multiDexEnabled true
         android {
             defaultConfig {
@@ -17,6 +21,16 @@ android {
                     abiFilters "armeabi", "armeabi-v7a", "x86"
                 }
             }
+        }
+    }
+
+    // https://developer.android.com/studio/build/gradle-plugin-3-0-0-migration.html?utm_source=android-studio
+    flavorDimensions 'main'
+
+    productFlavors {
+        aosp {
+            dimension 'main'
+            //matchingFallbacks ['aosp']
         }
     }
 
@@ -47,6 +61,7 @@ android {
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     compile project(':lib')
+    compile project(':launcher')
     //Android Lib
     compile 'com.android.support:multidex:1.0.2'
     compile 'com.android.support:appcompat-v7:26.1.0'
@@ -59,9 +74,12 @@ dependencies {
     compile 'org.jdeferred:jdeferred-android-aar:1.2.4'
     // ThirdParty
     compile 'com.jonathanfinerty.once:once:1.0.3'
-    compile 'com.flurry.android:analytics:6.9.2'
+    compile('com.crashlytics.sdk.android:crashlytics:2.9.0@aar') {
+        transitive = true;
+    }
     compile 'com.kyleduo.switchbutton:library:1.4.6'
     compile('com.allenliu.versionchecklib:library:1.8.3')
     compile 'com.github.medyo:android-about-page:1.2.2'
     compile 'moe.feng:AlipayZeroSdk:1.1'
+    compile 'com.carson_ho:Kawaii_LoadingView:1.0.0'
 }
