@@ -1,18 +1,23 @@
 package io.virtualapp.home;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.PowerManager;
+import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
-import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
 import android.view.View;
 import android.widget.Toast;
@@ -20,6 +25,7 @@ import android.widget.Toast;
 import com.google.android.apps.nexuslauncher.NexusLauncherActivity;
 import com.lody.virtual.client.core.VirtualCore;
 import com.lody.virtual.helper.utils.DeviceUtil;
+import com.lody.virtual.remote.InstalledAppInfo;
 
 import java.io.File;
 import java.util.List;
@@ -31,6 +37,7 @@ import io.virtualapp.VCommends;
 import io.virtualapp.home.models.AppData;
 import io.virtualapp.home.models.AppInfoLite;
 import io.virtualapp.settings.SettingsActivity;
+import io.virtualapp.update.VAVersionService;
 
 /**
  * @author weishu
@@ -40,11 +47,18 @@ import io.virtualapp.settings.SettingsActivity;
 public class NewHomeActivity extends NexusLauncherActivity implements HomeContract.HomeView {
 
     private static final String SHOW_DOZE_ALERT_KEY = "SHOW_DOZE_ALERT_KEY";
+    private static final String WALLPAPER_FILE_NAME = "wallpaper.png";
 
     private HomeContract.HomePresenter mPresenter;
     private Handler mUiHandler;
     private int mInstallCount = 0;
 
+    public static void goHome(Context context) {
+        Intent intent = new Intent(context, NewHomeActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        context.startActivity(intent);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,6 +72,17 @@ public class NewHomeActivity extends NexusLauncherActivity implements HomeContra
 
         alertForMeizu();
         alertForDoze();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // check for update
+        new Handler().postDelayed(() ->
+                VAVersionService.checkUpdate(getApplicationContext(), false), 1000);
+
+        // check for wallpaper
+        setWallpaper();
     }
 
     @Override
@@ -75,25 +100,6 @@ public class NewHomeActivity extends NexusLauncherActivity implements HomeContra
         mPresenter = presenter;
     }
 
-    @Override
-    public void showBottomAction() {
-        // no-op
-    }
-
-    @Override
-    public void hideBottomAction() {
-        // no-op
-    }
-
-    @Override
-    public void showLoading() {
-
-    }
-
-    @Override
-    public void hideLoading() {
-
-    }
 
     @Override
     public void loadFinish(List<AppData> appModels) {
@@ -153,24 +159,84 @@ public class NewHomeActivity extends NexusLauncherActivity implements HomeContra
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (resultCode == RESULT_OK && data != null) {
-            List<AppInfoLite> appList = data.getParcelableArrayListExtra(VCommends.EXTRA_APP_INFO_LIST);
-            if (appList != null) {
-                boolean showTip = false;
-                int size = appList.size();
-                mInstallCount = size;
-                for (int i = 0; i < size; i++) {
-                    AppInfoLite info = appList.get(i);
-                    if (new File(info.path).length() > 1024 * 1024 * 24) {
-                        showTip = true;
-                    }
-                    mPresenter.addApp(info);
+        if (!(resultCode == RESULT_OK && data != null)) {
+            return;
+        }
+        List<AppInfoLite> appList = data.getParcelableArrayListExtra(VCommends.EXTRA_APP_INFO_LIST);
+        if (appList != null) {
+            boolean showTip = false;
+            int size = appList.size();
+            mInstallCount = size;
+
+            if (dealUpdate(appList)) {
+                return;
+            }
+
+            for (int i = 0; i < size; i++) {
+                AppInfoLite info = appList.get(i);
+                if (new File(info.path).length() > 1024 * 1024 * 24) {
+                    showTip = true;
                 }
-                if (showTip) {
-                    Toast.makeText(this, R.string.large_app_install_tips, Toast.LENGTH_SHORT).show();
-                }
+                mPresenter.addApp(info);
+            }
+            if (showTip) {
+                Toast.makeText(this, R.string.large_app_install_tips, Toast.LENGTH_SHORT).show();
             }
         }
+
+    }
+
+    private boolean dealUpdate(List<AppInfoLite> appList) {
+        if (appList == null || appList.size() != 1) {
+            return false;
+        }
+        AppInfoLite appInfoLite = appList.get(0);
+        if (appInfoLite == null) {
+            return false;
+        }
+        if (appInfoLite.isEnableHidden) {
+            return false;
+        }
+        InstalledAppInfo installedAppInfo = VirtualCore.get().getInstalledAppInfo(appInfoLite.packageName, 0);
+        if (installedAppInfo == null) {
+            return false;
+        }
+        String currentVersion;
+        String toInstalledVersion;
+        int currentVersionCode;
+        int toInstalledVersionCode;
+        PackageManager packageManager = getPackageManager();
+        if (packageManager == null) {
+            return false;
+        }
+        try {
+            PackageInfo applicationInfo = installedAppInfo.getPackageInfo(0);
+            currentVersion = applicationInfo.versionName;
+            currentVersionCode = applicationInfo.versionCode;
+
+            PackageInfo packageArchiveInfo = packageManager.getPackageArchiveInfo(appInfoLite.path, 0);
+            toInstalledVersion = packageArchiveInfo.versionName;
+            toInstalledVersionCode = packageArchiveInfo.versionCode;
+
+            String multiVersionUpdate = getResources().getString(currentVersionCode == toInstalledVersionCode ? R.string.multi_version_cover : (
+                    currentVersionCode < toInstalledVersionCode ? R.string.multi_version_upgrade : R.string.multi_version_downgrade
+            ));
+            AlertDialog alertDialog = new AlertDialog.Builder(getContext())
+                    .setTitle(R.string.multi_version_tip_title)
+                    .setMessage(getResources().getString(R.string.multi_version_tips_content, currentVersion, toInstalledVersion))
+                    .setPositiveButton(R.string.multi_version_multi, (dialog, which) -> {
+                        mPresenter.addApp(appInfoLite);
+                    })
+                    .setNegativeButton(multiVersionUpdate, ((dialog, which) -> {
+                        appInfoLite.isEnableHidden = true;
+                        mPresenter.addApp(appInfoLite);
+                    }))
+                    .create();
+            alertDialog.show();
+        } catch (Throwable ignored) {
+            return false;
+        }
+        return true;
     }
 
     @Override
@@ -183,7 +249,12 @@ public class NewHomeActivity extends NexusLauncherActivity implements HomeContra
             }
         }
         if (packageName == null) {
-            throw new RuntimeException("can not found package name for:" + intent);
+            try {
+                startActivity(intent);
+                return;
+            } catch (Throwable ignored) {
+                // ignore
+            }
         }
         LoadingActivity.launch(this, packageName, usedId);
     }
@@ -197,11 +268,11 @@ public class NewHomeActivity extends NexusLauncherActivity implements HomeContra
                 mUiHandler.postDelayed(() -> mLoadingDialog.dismiss(), TimeUnit.MINUTES.toMillis(6));
             }
             if (model.isInstalling()) {
-                mLoadingDialog.setTitle(getResources().getString(R.string.add_app_loading_tips, model.getName()));
+                mLoadingDialog.setTitle(getResources().getString(R.string.add_app_installing_tips, model.getName()));
                 mLoadingDialog.show();
                 mUiHandler.postDelayed(() -> mLoadingDialog.startLoading(), 30);
             } else if (model.isLoading()) {
-                mLoadingDialog.setTitle(getResources().getString(R.string.add_app_installing_tips, model.getName()));
+                mLoadingDialog.setTitle(getResources().getString(R.string.add_app_loading_tips, model.getName()));
                 mLoadingDialog.show();
                 mUiHandler.postDelayed(() -> mLoadingDialog.startLoading(), 30);
             } else {
@@ -234,12 +305,13 @@ public class NewHomeActivity extends NexusLauncherActivity implements HomeContra
                     .create();
             try {
                 alertDialog.show();
-            } catch (Throwable ignored) {}
+            } catch (Throwable ignored) {
+            }
         }, 2000);
     }
 
     private void alertForDoze() {
-        if(Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
             return;
         }
         PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
@@ -280,8 +352,29 @@ public class NewHomeActivity extends NexusLauncherActivity implements HomeContra
                         .create();
                 try {
                     alertDialog.show();
-                } catch (Throwable ignored) {}
-            }, 3000);
+                } catch (Throwable ignored) {
+                    ignored.printStackTrace();
+                }
+            }, 1000);
+        }
+    }
+
+    private void setWallpaper() {
+        File wallpaper = getFileStreamPath(WALLPAPER_FILE_NAME);
+        if (wallpaper == null || !wallpaper.exists() || wallpaper.isDirectory()) {
+            setOurWallpaper(getResources().getDrawable(R.drawable.home_bg));
+        } else {
+            long start = SystemClock.elapsedRealtime();
+            Drawable d = BitmapDrawable.createFromPath(wallpaper.getPath());
+            long cost = SystemClock.elapsedRealtime() - start;
+            if (cost > 200) {
+                Toast.makeText(getApplicationContext(), R.string.wallpaper_too_big_tips, Toast.LENGTH_SHORT).show();
+            }
+            if (d == null) {
+                setOurWallpaper(getResources().getDrawable(R.drawable.home_bg));
+            } else {
+                setOurWallpaper(d);
+            }
         }
     }
 }

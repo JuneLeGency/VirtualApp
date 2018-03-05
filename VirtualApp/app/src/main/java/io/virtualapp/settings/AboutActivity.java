@@ -15,6 +15,7 @@ import java.util.Calendar;
 
 import io.virtualapp.R;
 import io.virtualapp.abs.ui.VActivity;
+import io.virtualapp.update.VAVersionService;
 import mehdi.sakout.aboutpage.AboutPage;
 import mehdi.sakout.aboutpage.Element;
 
@@ -30,11 +31,12 @@ public class AboutActivity extends VActivity {
                 .isRTL(false)
                 .setImage(R.mipmap.ic_launcher)
                 .addItem(getVersionElement())
+                .addItem(getCheckUpdateElement())
                 .addItem(getFeedbackElement())
                 .addItem(getFeedbackWechatElement())
                 .addItem(getThanksElement())
                 .addEmail("va1xposed@gmail.com")
-                .addWebsite("https://github.com/android-hacker/VAExposed")
+                .addWebsite("http://vxposed.com")
                 .addGitHub("tiann")
                 .addItem(getCopyRightsElement());
         View aboutPage = page.create();
@@ -112,5 +114,14 @@ public class AboutActivity extends VActivity {
             }
         });
         return thanks;
+    }
+
+    Element getCheckUpdateElement() {
+        Element checkUpdate = new Element();
+        checkUpdate.setTitle(getResources().getString(R.string.check_update));
+        checkUpdate.setOnClickListener(v -> {
+            VAVersionService.checkUpdateImmediately(getApplicationContext(), true);
+        });
+        return checkUpdate;
     }
 }

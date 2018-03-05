@@ -1,9 +1,9 @@
 package io.virtualapp;
 
+import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Looper;
-import android.support.multidex.MultiDexApplication;
 import android.util.Log;
 
 import com.crashlytics.android.Crashlytics;
@@ -25,14 +25,13 @@ import io.virtualapp.delegate.MyAppRequestListener;
 import io.virtualapp.delegate.MyComponentDelegate;
 import io.virtualapp.delegate.MyPhoneInfoDelegate;
 import io.virtualapp.delegate.MyTaskDescriptionDelegate;
-import io.virtualapp.update.VAVersionService;
 import jonathanfinerty.once.Once;
 import me.weishu.exposed.LogcatService;
 
 /**
  * @author Lody
  */
-public class VApp extends MultiDexApplication {
+public class VApp extends Application {
 
     private static final String TAG = "VApp";
 
@@ -71,8 +70,9 @@ public class VApp extends MultiDexApplication {
 
                 Fabric.with(VApp.this, new Crashlytics());
 
-                boolean isXposedInstalled = VirtualCore.get().isAppInstalled(XPOSED_INSTALLER_PACKAGE);
+                boolean isXposedInstalled = false;
                 try {
+                    isXposedInstalled = VirtualCore.get().isAppInstalled(XPOSED_INSTALLER_PACKAGE);
                     File oldXposedInstallerApk = getFileStreamPath("XposedInstaller_1_24.apk");
                     if (oldXposedInstallerApk.exists()) {
                         VirtualCore.get().uninstallPackage(XPOSED_INSTALLER_PACKAGE);
@@ -110,9 +110,7 @@ public class VApp extends MultiDexApplication {
                     }
                 }
 
-                // check for update
-                new android.os.Handler().postDelayed(() ->
-                        VAVersionService.checkUpdate(VApp.this), 10000);
+
             }
 
             @Override

@@ -48,7 +48,7 @@
     <string name="prompt_alipay_not_found">Alipay Not Found.</string>
     <string name="prompt_wait">Please wait for a while.....</string>
     <string name="donate_dialog_title">About Donate</string>
-    <string name="donate_dialog_content">empty</string>
+    <string name="donate_dialog_content">Do not donate me if you are not rich :)</string>
     <string name="donate_dialog_yes">Donate</string>
     <string name="donate_dialog_no">Cancel</string>
     <string name="large_app_install_tips">Installation time may take a while, please be patient :)</string>
@@ -81,9 +81,25 @@
     <string name="settings_app_manage_text">Manage Apps</string>
     <string name="settings_desktop_text">Desktop Settings</string>
     <string name="app_manage_uninstall">Uninstall</string>
+    <string name="app_manage_repair">Repair</string>
     <string name="settings_title">Settings</string>
     <string name="task_manage_uninstall">Kill Process</string>
     <string name="settings_reboot_title">Reboot VirtualXposed</string>
     <string name="settings_reboot_content">This will kill all apps running in VirtualXposed, do you want to do it?</string>
+    <string name="check_update">Check Update</string>
+    <string name="version_is_latest">Current version is latest!</string>
+    <string name="new_version_detected">New Version:</string>
+    <string name="multi_version_tip_title">Install tips</string>
+    <string name="multi_version_tips_content">You have chosen an existing app, Install one more app or update existing? \n(Installed version %1$s, selected version: %2$s</string>
+    <string name="multi_version_multi">Install another one</string>
+    <string name="multi_version_cover">Cover</string>
+    <string name="multi_version_upgrade">Upgrade</string>
+    <string name="multi_version_downgrade">Downgrade</string>
+    <string name="app_manage_repair_failed_tips" >Sorry, Repair failed, please re-install this app</string>
+    <string name="app_manage_repairing">Repairing</string>
+    <string name="app_manage_repair_success_title">Repair tips</string>
+    <string name="app_manage_repair_success_content">Repair success, please force-stop VirtualXposed to make it take effect.</string>
+    <string name="app_manage_repair_reboot_now">Reboot now</string>
+    <string name="wallpaper_too_big_tips">The wallpaper picture is too big to slow the startup time, please choose a proper one.</string>
 
 </resources>

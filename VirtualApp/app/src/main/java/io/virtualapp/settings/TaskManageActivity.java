@@ -89,7 +89,7 @@ public class TaskManageActivity extends VActivity {
             info.pid = runningAppProcessInfo.pid;
             info.uid = runningAppProcessInfo.uid;
 
-            Drawable icon = null;
+            Drawable icon = getResources().getDrawable(android.R.drawable.sym_def_app_icon);
             if (runningAppProcessInfo.pkgList != null) {
                 for (String pkg : runningAppProcessInfo.pkgList) {
                     InstalledAppInfo installedAppInfo = VirtualCore.get().getInstalledAppInfo(pkg, 0);
@@ -141,12 +141,7 @@ public class TaskManageActivity extends VActivity {
 
             holder.button.setText(R.string.task_manage_uninstall);
             holder.label.setText(item.name);
-
-            if (item.icon == null) {
-                holder.icon.setVisibility(View.GONE);
-            } else {
-                holder.icon.setImageDrawable(item.icon);
-            }
+            holder.icon.setImageDrawable(item.icon);
 
             holder.button.setOnClickListener(v -> {
                 VActivityManager.get().killApplicationProcess(item.name.toString(), item.uid);
@@ -165,7 +160,7 @@ public class TaskManageActivity extends VActivity {
         View root;
 
         ViewHolder(Context context, ViewGroup parent) {
-            root = LayoutInflater.from(context).inflate(R.layout.item_app_manage, parent, false);
+            root = LayoutInflater.from(context).inflate(R.layout.item_task_manage, parent, false);
             icon = root.findViewById(R.id.item_app_icon);
             label = root.findViewById(R.id.item_app_name);
             button = root.findViewById(R.id.item_app_button);

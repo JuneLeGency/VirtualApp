@@ -78,7 +78,6 @@ class HomePresenterImpl implements HomeContract.HomePresenter {
 
     @Override
     public void dataChanged() {
-        mView.showLoading();
         long start = SystemClock.elapsedRealtime();
         mRepo.getVirtualApps().then(result -> {
             long delta = 500 - (SystemClock.elapsedRealtime() - start);
@@ -101,6 +100,9 @@ class HomePresenterImpl implements HomeContract.HomePresenter {
             InstalledAppInfo installedAppInfo = VirtualCore.get().getInstalledAppInfo(info.packageName, 0);
             addResult.justEnableHidden = installedAppInfo != null;
             addResult.addedToLaucher = false;
+            if (info.isEnableHidden) {
+                addResult.justEnableHidden = false;
+            }
             if (addResult.justEnableHidden) {
                 int[] userIds = installedAppInfo.getInstalledUsers();
                 int nextUserId = userIds.length;

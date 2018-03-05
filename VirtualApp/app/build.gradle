@@ -12,13 +12,13 @@ android {
         applicationId "io.va.exposed"
         minSdkVersion 21
         targetSdkVersion 22
-        versionCode 69
-        versionName "0.6.9"
-        multiDexEnabled true
+        versionCode 73
+        versionName "0.7.3"
+        multiDexEnabled false
         android {
             defaultConfig {
                 ndk {
-                    abiFilters "armeabi", "armeabi-v7a", "x86"
+                    abiFilters "armeabi-v7a", "x86"
                 }
             }
         }
