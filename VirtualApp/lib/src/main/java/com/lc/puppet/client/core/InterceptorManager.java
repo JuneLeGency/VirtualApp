@@ -157,6 +157,8 @@ public class InterceptorManager {
                         case SET:
                             //target.removeInterceptorHook();
                             break;
+                        default:
+                            break;
                     }
                 }
             }

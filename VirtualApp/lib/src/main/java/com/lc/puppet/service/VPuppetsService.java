@@ -94,7 +94,7 @@ public class VPuppetsService extends IPuppetManager.Stub {
 
             object = Reflect.on(patchHookProvider).callBest(call.method, call.args).get();
             //TODO reconstruct
-//            object = patchHookProvider.call(call.method, call.args);
+            //object = patchHookProvider.call(call.method, call.args);
         } catch (Exception e) {
             Log.e(TAG, call + " failed", e);
         }

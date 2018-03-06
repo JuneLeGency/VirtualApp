@@ -34,6 +34,14 @@ public class WifiInfoMirror {
 
         @MethodParams({int.class, byte[].class, String.class})
         public static RefConstructor<InetAddress> ctor;
+
+        /**
+         * 7.0 无参
+         */
+        public static RefConstructor<InetAddress> ctor2;
+        public static RefConstructor<InetAddress> getCtor(){
+            return ctor==null?ctor2:ctor;
+        }
     }
 
     public static RefInt mNetworkId;

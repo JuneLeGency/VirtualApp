@@ -13,7 +13,7 @@ android {
     compileSdkVersion 25
     buildToolsVersion '26.0.2'
     defaultConfig {
-        applicationId "io.virtualapp"
+        applicationId "com.xiaomi.dual"
         minSdkVersion 15
         targetSdkVersion 22
         versionCode 24
@@ -75,7 +75,7 @@ dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     compile project(':lib')
     //Android Lib
-    compile 'com.android.support:multidex:1.0.2'
+    compile 'com.android.support:multidex:1.0.3'
     compile 'com.android.support:appcompat-v7:25.4.0'
     compile 'com.melnykov:floatingactionbutton:1.3.0'
     compile 'com.android.support:recyclerview-v7:25.4.0'

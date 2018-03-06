@@ -29,6 +29,7 @@ public class WifiManagerProvider extends PatchHookProvider {
      * @return
      * @see com.lc.puppet.client.hook.patch.hook.wifi.Interceptor_GetConnectionInfo
      */
+    @ForReflect
     private WifiInfo getConnectionInfo() {
         return callDataWithCreator(IObIndex.WIFI_INFO, new PaperDataCreator<WifiInfo>() {
             @Override
@@ -36,7 +37,7 @@ public class WifiManagerProvider extends PatchHookProvider {
                 String hostName = null;
                 byte[] ipAddress = {100, 84, -55, -103};
                 int family = 2;
-                InetAddress inetAddress = WifiInfoMirror.InetAddressL.ctor.newInstance(family, ipAddress, hostName);
+                InetAddress inetAddress = WifiInfoMirror.InetAddressL.getCtor().newInstance(family, ipAddress, hostName);
                 return new WifiInfoMirror.Builder().setFrequency(5825).setMacAddress("02:00:00:00:00:00")
                         .setBSSID("00:00:00:00:00:00").setEphemeral(false).setLinkSpeed(72)
                         .setMeteredHint(false).setNetworkId(7).setRssi(-55)
@@ -52,6 +53,7 @@ public class WifiManagerProvider extends PatchHookProvider {
      * @return
      * @see com.lc.puppet.client.hook.patch.hook.wifi.Interceptor_GetScanResults
      */
+    @ForReflect
     List<ScanResult> getScanResults(String callingPackage) {
         return callDataWithCreator(IObIndex.SCAN_RESULTS, new PaperDataCreator<List<ScanResult>>() {
             //
@@ -75,6 +77,7 @@ public class WifiManagerProvider extends PatchHookProvider {
      * @return
      * @see com.lc.puppet.client.hook.patch.hook.wifi.Interceptor_GetWifiEnabledState
      */
+    @ForReflect
     public int getWifiEnabledState() {
         return WifiManager.WIFI_STATE_ENABLED;
     }

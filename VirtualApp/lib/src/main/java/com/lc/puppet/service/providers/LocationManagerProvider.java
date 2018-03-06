@@ -47,6 +47,7 @@ public class LocationManagerProvider extends PatchHookProvider {
      * @see com.android.server.LocationManagerService#requestLocationUpdates (LocationRequest request, ILocationListener listener, PendingIntent intent, String packageName)
      * @see com.lc.puppet.client.hook.patch.hook.location.Interceptor_RequestLocationUpdates
      */
+    @ForReflect
     public void requestLocationUpdates(Object[] args) {
         if (args.length < 2 || !(args[1] instanceof IBinder)) {
             return;
@@ -121,6 +122,7 @@ public class LocationManagerProvider extends PatchHookProvider {
      * @param args
      * @see com.lc.puppet.client.hook.patch.hook.location.Interceptor_RemoveUpdates
      */
+    @ForReflect
     public void removeUpdates(Object[] args) {
 
         if (args.length <= 2 || !(args[0] instanceof IBinder)) {

@@ -54,7 +54,7 @@ public class EnvManager {
     }
 
     private Object getSystemService(String service) {
-        return context.getSystemService(service);
+        return context.getApplicationContext().getSystemService(service);
     }
 
     public void saveCurrentEnv() {

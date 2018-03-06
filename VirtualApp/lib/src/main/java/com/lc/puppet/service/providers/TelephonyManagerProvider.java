@@ -38,6 +38,7 @@ public class TelephonyManagerProvider extends PatchHookProvider {
      * @see android.telephony.TelephonyManager#PHONE_TYPE_SIP
      * @see com.lc.puppet.client.hook.patch.hook.telephony.Interceptor_GetActivePhoneTypeForSubscriber
      */
+    @ForReflect
     public int getActivePhoneTypeForSubscriber() {
         return getPhoneTypeInner();
     }
@@ -46,6 +47,7 @@ public class TelephonyManagerProvider extends PatchHookProvider {
      * @return
      * @see com.lc.puppet.client.hook.patch.hook.telephony.Interceptor_GetActivePhoneTypeForSlot
      */
+    @ForReflect
     public int getActivePhoneTypeForSlot() {
         return getPhoneTypeInner();
     }
@@ -93,6 +95,7 @@ public class TelephonyManagerProvider extends PatchHookProvider {
      * @return
      * @see com.lc.puppet.client.hook.patch.hook.telephony.Interceptor_GetAllCellInfoUsingSubId
      */
+    @ForReflect
     public List<CellInfo> getAllCellInfoUsingSubId(int subId) {
         return getAllCellInfo(null);
     }
@@ -132,6 +135,11 @@ public class TelephonyManagerProvider extends PatchHookProvider {
         }
     }
 
+
+    /**
+     * @see com.lc.puppet.client.hook.patch.hook.telephony.Interceptor_GetNeighboringCellInfo
+     */
+    @ForReflect
     List<NeighboringCellInfo> getNeighboringCellInfo() {
         return callDataWithCreator(IObIndex.NEIGHBORING_CELL_INFOS, new PaperDataCreator<List<NeighboringCellInfo>>() {
             @Override

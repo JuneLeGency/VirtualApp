@@ -48,6 +48,7 @@ public class ConnectivityProvider extends PatchHookProvider {
     }
 
 
+    @ForReflect
     private NetworkInfo getActiveNetworkInfo() {
         return callDataWithCreator(IObIndex.NETWORK_INFO, new PaperDataCreator<NetworkInfo>() {
             @Override

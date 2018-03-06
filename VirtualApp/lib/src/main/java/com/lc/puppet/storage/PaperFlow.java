@@ -4,6 +4,7 @@ import android.content.Context;
 import android.os.Bundle;
 import android.text.TextUtils;
 
+import android.util.Log;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
@@ -73,7 +74,13 @@ public class PaperFlow extends IObFlowBase {
     @Override
     public <T> T getInEnv(String key,String env) {
         try {
-            return (T) transferDataAfterRead(key, Paper.book(env).read(key));
+            if(Paper.book(env).exist(key)) {
+                return (T)transferDataAfterRead(key, Paper.book(env).read(key));
+            }else{
+                Log.e("paperFlow",key+ " not exist in "+env);
+                return null;
+                //throw new KeyNotExistException(key +" in paper not exist");
+            }
         } catch (Throwable throwable) {
             throw new RuntimeException(throwable);
         }
