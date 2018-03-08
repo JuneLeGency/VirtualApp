@@ -12,6 +12,7 @@ import android.telephony.TelephonyManager;
 import android.telephony.cdma.CdmaCellLocation;
 import android.telephony.gsm.GsmCellLocation;
 import com.lc.puppet.proto.CellInfoMirror;
+import com.lc.puppet.service.providers.base.IOBHookDataWithFake;
 import com.lc.puppet.service.providers.base.PatchHookProvider;
 import com.lc.puppet.storage.IObIndex;
 import com.lody.virtual.client.hook.base.MethodInvocationProxy;
@@ -27,6 +28,105 @@ public class TelephonyManagerProvider extends PatchHookProvider {
     @Override
     public Class<? extends MethodInvocationProxy> getDelegatePatch() {
         return TelephonyStub.class;
+    }
+
+    @Override
+    protected void addHookDataProviders() {
+        addProvider(new getActivePhoneTypeForSubscriber());
+        addProvider(new getActivePhoneTypeForSlot());
+        addProvider(new getAllCellInfoUsingSubId());
+        addProvider(new getCellLocation());
+        addProvider(new getNeighboringCellInfo());
+    }
+
+    private class getActivePhoneTypeForSubscriber extends IOBHookDataWithFake<Integer> {
+
+        @Override
+        public String getName() {
+            return "getActivePhoneTypeForSubscriber";
+        }
+
+        @Override
+        public IObIndex getIObIndex() {
+            return IObIndex.PHONE_TYPE;
+        }
+
+        @Override
+        public Integer createFakeData() {
+            return TelephonyManager.PHONE_TYPE_CDMA;
+        }
+    }
+
+    private class getActivePhoneTypeForSlot extends IOBHookDataWithFake<Integer> {
+
+        @Override
+        public String getName() {
+            return "getActivePhoneTypeForSlot";
+        }
+
+        @Override
+        public IObIndex getIObIndex() {
+            return IObIndex.PHONE_TYPE;
+        }
+
+        @Override
+        public Integer createFakeData() {
+            return TelephonyManager.PHONE_TYPE_CDMA;
+        }
+    }
+
+    private class getAllCellInfoUsingSubId extends IOBHookDataWithFake<List<CellInfo>> {
+
+        @Override
+        public String getName() {
+            return "getAllCellInfoUsingSubId";
+        }
+
+        @Override
+        public IObIndex getIObIndex() {
+            return IObIndex.CELL_INFOS;
+        }
+
+        @Override
+        public List<CellInfo> createFakeData() {
+            return getFakeCellInfos();
+        }
+    }
+
+    private class getCellLocation extends IOBHookDataWithFake<Bundle> {
+
+        @Override
+        public String getName() {
+            return "getCellLocation";
+        }
+
+        @Override
+        public IObIndex getIObIndex() {
+            return IObIndex.CELL_LOCATION;
+        }
+
+        @Override
+        public Bundle createFakeData() {
+            return getFakeCellLocation();
+        }
+    }
+
+    private class getNeighboringCellInfo extends IOBHookDataWithFake<List<NeighboringCellInfo>> {
+
+        @Override
+        public String getName() {
+            return "getNeighboringCellInfo";
+        }
+
+        @Override
+        public IObIndex getIObIndex() {
+            return IObIndex.NEIGHBORING_CELL_INFOS;
+        }
+
+        @Override
+        public List<NeighboringCellInfo> createFakeData() {
+            return getFakeNignboringCellInfo();
+        }
     }
 
     /**
@@ -66,28 +166,32 @@ public class TelephonyManagerProvider extends PatchHookProvider {
         return callDataWithCreator(IObIndex.CELL_INFOS, new PaperDataCreator<List<CellInfo>>() {
             @Override
             public List<CellInfo> createFakeData() {
-                List<CellInfo> list = new ArrayList<>();
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR1) {
+                return getFakeCellInfos();
+            }
+        });
+    }
+
+    private List<CellInfo> getFakeCellInfos() {
+        List<CellInfo> list = new ArrayList<>();
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR1) {
 //            int uid =2147483647;
-                    int uid = 123;
-                    //主要关心tac ci 值
-                    CellIdentityLte[] cellIdentityLtes = {Reflect.on(CellIdentityLte.class).create(460, 1, 111210241, 21, 9673).get(),
+            int uid = 123;
+            //主要关心tac ci 值
+            CellIdentityLte[] cellIdentityLtes = {Reflect.on(CellIdentityLte.class).create(460, 1, 111210241, 21, 9673).get(),
 //                    new CellIdentityLte(uid, uid, uid, 77, uid),
 //                    new CellIdentityLte(uid, uid, uid, 43, uid),
 //                    new CellIdentityLte(uid, uid, uid, 303, uid),
 //                    new CellIdentityLte(uid, uid, uid, 395, uid),
 //                    new CellIdentityLte(uid, uid, uid, 187, uid)
-                    };
-                    for (CellIdentityLte c : cellIdentityLtes) {
-                        CellInfoLte cellInfoLte = CellInfoMirror.CellInfoLteMirror.ctor.newInstance();
-                        CellInfoMirror.CellInfoLteMirror.mCellIdentityLte.set(cellInfoLte, c);
-                        CellInfoMirror.mRegistered.set(cellInfoLte, false);
-                        list.add(cellInfoLte);
-                    }
-                }
-                return list;
+            };
+            for (CellIdentityLte c : cellIdentityLtes) {
+                CellInfoLte cellInfoLte = CellInfoMirror.CellInfoLteMirror.ctor.newInstance();
+                CellInfoMirror.CellInfoLteMirror.mCellIdentityLte.set(cellInfoLte, c);
+                CellInfoMirror.mRegistered.set(cellInfoLte, false);
+                list.add(cellInfoLte);
             }
-        });
+        }
+        return list;
     }
 
     /**
@@ -105,11 +209,12 @@ public class TelephonyManagerProvider extends PatchHookProvider {
      *
      * @return
      */
+    @ForReflect
     public Bundle getCellLocation() {
         return callDataWithCreator(IObIndex.CELL_LOCATION, new PaperDataCreator<Bundle>() {
             @Override
             public Bundle createFakeData() {
-                return getCellLocationInner();
+                return getFakeCellLocation();
             }
         });
     }
@@ -124,7 +229,7 @@ public class TelephonyManagerProvider extends PatchHookProvider {
         return null;
     }
 
-    private Bundle getCellLocationInner() {
+    private Bundle getFakeCellLocation() {
         switch (getActivePhoneTypeForSlot()) {
             case TelephonyManager.PHONE_TYPE_CDMA:
                 return createCdmaCellLocation(null);
@@ -144,14 +249,18 @@ public class TelephonyManagerProvider extends PatchHookProvider {
         return callDataWithCreator(IObIndex.NEIGHBORING_CELL_INFOS, new PaperDataCreator<List<NeighboringCellInfo>>() {
             @Override
             public List<NeighboringCellInfo> createFakeData() {
-                List<NeighboringCellInfo> cellInfo = new ArrayList<>();
-                NeighboringCellInfo n = new NeighboringCellInfo(3, "6156", TelephonyManager.NETWORK_TYPE_HSDPA);
-                n.setCid(123);
-                n.setRssi(132);
-                cellInfo.add(n);
-                return cellInfo;
+                return getFakeNignboringCellInfo();
             }
         });
+    }
+
+    private List<NeighboringCellInfo> getFakeNignboringCellInfo() {
+        List<NeighboringCellInfo> cellInfo = new ArrayList<>();
+        NeighboringCellInfo n = new NeighboringCellInfo(3, "6156", TelephonyManager.NETWORK_TYPE_HSDPA);
+        n.setCid(123);
+        n.setRssi(132);
+        cellInfo.add(n);
+        return cellInfo;
     }
 
     private static Bundle createGsmCellLocation(GsmCellLocation gsmCellLocation) {
@@ -191,4 +300,6 @@ public class TelephonyManagerProvider extends PatchHookProvider {
         bundle.putInt("networkId", networkId);
         return bundle;
     }
+
+
 }

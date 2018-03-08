@@ -44,6 +44,7 @@ public class VInterceptorCallManager {
             ICallBody callBody = ICallBody.create(interceptorMethod).arg(objects);
             IObjectWrapper object = getInterface().call(callBody);
             if (autoSave) {
+                //开启此项 采用 调用方法 和参数来自动保存数据结果
                 getInterface().saveMethodResult(callBody, object);
             }
             return object != null ? object.get() : null;

@@ -88,7 +88,11 @@ public class ICallBody implements Parcelable {
         stringBuilder.append("#");
         stringBuilder.append(String.valueOf(method));
         for (Object object : args) {
-            stringBuilder.append(object.getClass().getCanonicalName());
+            if(object==null){
+                stringBuilder.append("null");
+            }else {
+                stringBuilder.append(object.getClass().getCanonicalName());
+            }
             stringBuilder.append("`");
         }
         signature = stringBuilder.toString();

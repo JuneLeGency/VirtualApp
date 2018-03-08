@@ -6,7 +6,7 @@ android {
         config {
             keyAlias 'vptest'
             keyPassword 'vptest'
-            storeFile file('vp_sign.jks')
+            storeFile file('vp_sign')
             storePassword 'vptest'
         }
     }
@@ -37,7 +37,7 @@ android {
     buildTypes {
         debug {
             jniDebuggable false
-//            signingConfig signingConfigs.config
+            signingConfig signingConfigs.config
         }
         release {
             minifyEnabled false

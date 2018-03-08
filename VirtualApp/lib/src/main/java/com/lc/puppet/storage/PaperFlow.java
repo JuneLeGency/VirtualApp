@@ -77,7 +77,7 @@ public class PaperFlow extends IObFlowBase {
             if(Paper.book(env).exist(key)) {
                 return (T)transferDataAfterRead(key, Paper.book(env).read(key));
             }else{
-                Log.e("paperFlow",key+ " not exist in "+env);
+                Log.e("paperFlow",key+ " not exist in "+env + "will use mock data");
                 return null;
                 //throw new KeyNotExistException(key +" in paper not exist");
             }

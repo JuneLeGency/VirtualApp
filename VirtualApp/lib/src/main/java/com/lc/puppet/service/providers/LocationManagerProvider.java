@@ -10,6 +10,7 @@ import android.os.RemoteException;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.lc.puppet.service.providers.base.HookDataProvider;
 import com.lc.puppet.service.providers.base.PatchHookProvider;
 import com.lc.puppet.storage.IObFlowBase;
 import com.lc.puppet.storage.IObIndex;
@@ -40,6 +41,41 @@ public class LocationManagerProvider extends PatchHookProvider {
     @Override
     public Class<? extends MethodInvocationProxy> getDelegatePatch() {
         return LocationManagerStub.class;
+    }
+
+    @Override
+    protected void addHookDataProviders() {
+        super.addHookDataProviders();
+        addProvider(new requestLocationUpdates());
+        addProvider(new removeUpdates());
+    }
+
+    private class requestLocationUpdates extends HookDataProvider {
+
+        @Override
+        public String getName() {
+            return "requestLocationUpdates";
+        }
+
+        @Override
+        public Object exec(Object... args) {
+            requestLocationUpdates(args);
+            return null;
+        }
+    }
+
+    private class removeUpdates extends HookDataProvider {
+
+        @Override
+        public String getName() {
+            return "removeUpdates";
+        }
+
+        @Override
+        public Object exec(Object... args) {
+            removeUpdates(args);
+            return null;
+        }
     }
 
     /**
@@ -93,13 +129,10 @@ public class LocationManagerProvider extends PatchHookProvider {
             }
         };
         try {
-            iLocationListener.linkToDeath(new IBinder.DeathRecipient() {
-                @Override
-                public void binderDied() {
-                    Log.d(TAG, "binder died");
-                    thread.running = false;
-                    listeners.remove(iLocationListener);
-                }
+            iLocationListener.linkToDeath(() -> {
+                Log.d(TAG, "binder died");
+                thread.running = false;
+                listeners.remove(iLocationListener);
             }, 0);
         } catch (RemoteException e) {
             e.printStackTrace();
@@ -110,7 +143,7 @@ public class LocationManagerProvider extends PatchHookProvider {
         if (fixedThreadPool == null) {
             fixedThreadPool = new ThreadPoolExecutor(0, Integer.MAX_VALUE,
                     60L, TimeUnit.SECONDS,
-                    new SynchronousQueue<Runnable>());
+                    new SynchronousQueue<>());
         }
         thread.index = fixedThreadPool.getPoolSize();
         thread.running = true;
@@ -192,4 +225,6 @@ public class LocationManagerProvider extends PatchHookProvider {
         }
         return location;
     }
+
+
 }
