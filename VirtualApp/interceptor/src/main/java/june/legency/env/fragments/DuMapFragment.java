@@ -20,7 +20,6 @@ import com.baidu.mapapi.map.BaiduMap;
 import com.baidu.mapapi.map.BitmapDescriptor;
 import com.baidu.mapapi.map.BitmapDescriptorFactory;
 import com.baidu.mapapi.map.MapStatus;
-import com.baidu.mapapi.map.MapStatusUpdate;
 import com.baidu.mapapi.map.MapStatusUpdateFactory;
 import com.baidu.mapapi.map.MapView;
 import com.baidu.mapapi.map.MyLocationConfiguration;
@@ -30,6 +29,8 @@ import com.baidu.mapapi.model.LatLng;
 import java.util.List;
 
 import june.legency.env.R;
+
+import static com.baidu.location.BDLocation.BDLOCATION_GCJ02_TO_BD09LL;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -90,7 +91,7 @@ public class DuMapFragment extends Fragment {
         mLocationClient.registerLocationListener(myListener);
         LocationClientOption option = new LocationClientOption();
         option.setLocationMode(LocationClientOption.LocationMode.Hight_Accuracy);
-        option.setCoorType("bd09ll");
+        option.setCoorType(BDLOCATION_GCJ02_TO_BD09LL);
         //可选，默认gcj02，设置返回的定位结果坐标系
 
         int span = 1000;

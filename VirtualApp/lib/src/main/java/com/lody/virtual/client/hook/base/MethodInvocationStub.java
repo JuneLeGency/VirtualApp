@@ -28,6 +28,7 @@ import java.util.Map;
 public class MethodInvocationStub<T> {
 
     private static final String TAG = MethodInvocationStub.class.getSimpleName();
+    private static final boolean NEED_PRINT_LOG = true;
 
     private Map<String, MethodProxy> mInternalMethodProxies = new HashMap<>();
     private T mBaseInterface;
@@ -182,6 +183,10 @@ public class MethodInvocationStub<T> {
 
 
             try {
+                if(NEED_PRINT_LOG){
+                    Log.d("legency",
+                        "target:" + (proxy == null ? "null" : proxy.getClass().getCanonicalName()) + " method:" + method.getName());
+                }
                 if (useProxy && methodProxy.beforeCall(mBaseInterface, method, args)) {
                     res = methodProxy.call(mBaseInterface, method, args);
                     res = methodProxy.afterCall(mBaseInterface, method, args, res);
