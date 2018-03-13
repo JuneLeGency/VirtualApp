@@ -36,11 +36,9 @@ public class MethodInvocationStub<T> {
     private String mIdentityName;
     private LogInvocation.Condition mInvocationLoggingCondition = LogInvocation.Condition.NEVER;
 
-
     public Map<String, MethodProxy> getAllHooks() {
         return mInternalMethodProxies;
     }
-
 
     public MethodInvocationStub(T baseInterface, Class<?>... proxyInterfaces) {
         this.mBaseInterface = baseInterface;
@@ -48,7 +46,8 @@ public class MethodInvocationStub<T> {
             if (proxyInterfaces == null) {
                 proxyInterfaces = MethodParameterUtils.getAllInterface(baseInterface.getClass());
             }
-            mProxyInterface = (T) Proxy.newProxyInstance(baseInterface.getClass().getClassLoader(), proxyInterfaces, new HookInvocationHandler());
+            mProxyInterface = (T)Proxy.newProxyInstance(baseInterface.getClass().getClassLoader(), proxyInterfaces,
+                new HookInvocationHandler());
         } else {
             VLog.d(TAG, "Unable to build HookDelegate: %s.", getIdentityName());
         }
@@ -74,7 +73,7 @@ public class MethodInvocationStub<T> {
     }
 
     public MethodInvocationStub(T baseInterface) {
-        this(baseInterface, (Class[]) null);
+        this(baseInterface, (Class[])null);
     }
 
     /**
@@ -95,7 +94,7 @@ public class MethodInvocationStub<T> {
         if (methodProxy != null && !TextUtils.isEmpty(methodProxy.getMethodName())) {
             if (mInternalMethodProxies.containsKey(methodProxy.getMethodName())) {
                 VLog.w(TAG, "The Hook(%s, %s) you added has been in existence.", methodProxy.getMethodName(),
-                        methodProxy.getClass().getName());
+                    methodProxy.getClass().getName());
                 return methodProxy;
             }
             mInternalMethodProxies.put(methodProxy.getMethodName(), methodProxy);
@@ -140,7 +139,7 @@ public class MethodInvocationStub<T> {
      */
     @SuppressWarnings("unchecked")
     public <H extends MethodProxy> H getMethodProxy(String name) {
-        return (H) mInternalMethodProxies.get(name);
+        return (H)mInternalMethodProxies.get(name);
     }
 
     /**
@@ -170,7 +169,7 @@ public class MethodInvocationStub<T> {
             MethodProxy methodProxy = getMethodProxy(method.getName());
             boolean useProxy = (methodProxy != null && methodProxy.isEnable());
             boolean mightLog = (mInvocationLoggingCondition != LogInvocation.Condition.NEVER) ||
-                    (methodProxy != null && methodProxy.getInvocationLoggingCondition() != LogInvocation.Condition.NEVER);
+                (methodProxy != null && methodProxy.getInvocationLoggingCondition() != LogInvocation.Condition.NEVER);
 
             String argStr = null;
             Object res = null;
@@ -178,14 +177,16 @@ public class MethodInvocationStub<T> {
             if (mightLog) {
                 // Arguments to string is done before the method is called because the method might actually change it
                 argStr = Arrays.toString(args);
-                argStr = argStr.substring(1, argStr.length()-1);
+                argStr = argStr.substring(1, argStr.length() - 1);
             }
 
-
             try {
-                if(NEED_PRINT_LOG){
-                    Log.d("legency",
-                        "target:" + (proxy == null ? "null" : proxy.getClass().getCanonicalName()) + " method:" + method.getName());
+                if (NEED_PRINT_LOG) {
+                    String caller = getBaseInterface().getClass().getCanonicalName();
+                    if (!caller.contains("ibcore.io.Posix")) {
+                        Log.d("callerDebug",
+                            getBaseInterface().getClass().getCanonicalName() + "#" + method.getName());
+                    }
                 }
                 if (useProxy && methodProxy.beforeCall(mBaseInterface, method, args)) {
                     res = methodProxy.call(mBaseInterface, method, args);
@@ -197,8 +198,9 @@ public class MethodInvocationStub<T> {
 
             } catch (Throwable t) {
                 exception = t;
-                if (exception instanceof InvocationTargetException && ((InvocationTargetException) exception).getTargetException() != null) {
-                    exception = ((InvocationTargetException) exception).getTargetException();
+                if (exception instanceof InvocationTargetException
+                    && ((InvocationTargetException)exception).getTargetException() != null) {
+                    exception = ((InvocationTargetException)exception).getTargetException();
                 }
                 throw exception;
 
@@ -206,7 +208,8 @@ public class MethodInvocationStub<T> {
                 if (mightLog) {
                     int logPriority = mInvocationLoggingCondition.getLogLevel(useProxy, exception != null);
                     if (methodProxy != null) {
-                        logPriority = Math.max(logPriority, methodProxy.getInvocationLoggingCondition().getLogLevel(useProxy, exception != null));
+                        logPriority = Math.max(logPriority,
+                            methodProxy.getInvocationLoggingCondition().getLogLevel(useProxy, exception != null));
                     }
                     if (logPriority >= 0) {
                         String retString;
@@ -218,7 +221,9 @@ public class MethodInvocationStub<T> {
                             retString = String.valueOf(res);
                         }
 
-                        Log.println(logPriority, TAG, method.getDeclaringClass().getSimpleName() + "." + method.getName() + "(" + argStr + ") => " + retString);
+                        Log.println(logPriority, TAG,
+                            method.getDeclaringClass().getSimpleName() + "." + method.getName() + "(" + argStr + ") => "
+                                + retString);
                     }
                 }
             }

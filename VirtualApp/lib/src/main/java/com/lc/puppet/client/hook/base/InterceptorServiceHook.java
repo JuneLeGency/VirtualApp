@@ -11,6 +11,6 @@ import com.lc.puppet.client.local.interceptor.VInterceptorCallManager;
 public abstract class InterceptorServiceHook extends InterceptorMethod{
     @Override
     public Object call(Object who, Method method, Object... args) throws Throwable {
-        return VInterceptorCallManager.get().call(this,args);
+        return VInterceptorCallManager.get().call(this,method,args);
     }
 }

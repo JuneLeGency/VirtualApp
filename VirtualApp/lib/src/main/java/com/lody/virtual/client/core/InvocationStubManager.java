@@ -120,7 +120,10 @@ public final class InvocationStubManager {
             addInjector(new LibCoreStub());
 			addInjector(new ActivityManagerStub());
 			addInjector(new PackageManagerStub());
-			addInjector(HCallbackStub.getDefault());
+			if(!VirtualCore.get().isFakeApp()) {
+				//fake app 进程不用hook
+				addInjector(HCallbackStub.getDefault());
+			}
 			addInjector(new ISmsStub());
 			addInjector(new ISubStub());
 			addInjector(new DropBoxManagerStub());

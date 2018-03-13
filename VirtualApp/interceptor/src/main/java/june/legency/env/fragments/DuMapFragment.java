@@ -1,5 +1,7 @@
 package june.legency.env.fragments;
 
+import java.util.List;
+
 import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
@@ -9,7 +11,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-
 import com.baidu.location.BDLocation;
 import com.baidu.location.BDLocationListener;
 import com.baidu.location.LocationClient;
@@ -25,9 +26,6 @@ import com.baidu.mapapi.map.MapView;
 import com.baidu.mapapi.map.MyLocationConfiguration;
 import com.baidu.mapapi.map.MyLocationData;
 import com.baidu.mapapi.model.LatLng;
-
-import java.util.List;
-
 import june.legency.env.R;
 
 import static com.baidu.location.BDLocation.BDLOCATION_GCJ02_TO_BD09LL;
@@ -121,7 +119,6 @@ public class DuMapFragment extends Fragment {
 
         option.setEnableSimulateGps(false);
         mLocationClient.setLocOption(option);
-
     }
 
     @Override
@@ -134,7 +131,7 @@ public class DuMapFragment extends Fragment {
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        mMapView = (MapView) view.findViewById(R.id.bmapView);
+        mMapView = (MapView)view.findViewById(R.id.bmapView);
         mLocationClient.start();
     }
 
@@ -167,10 +164,10 @@ public class DuMapFragment extends Fragment {
     public void onAttach(Context context) {
         super.onAttach(context);
         if (context instanceof OnFragmentInteractionListener) {
-            mListener = (OnFragmentInteractionListener) context;
+            mListener = (OnFragmentInteractionListener)context;
         } else {
             throw new RuntimeException(context.toString()
-                    + " must implement OnFragmentInteractionListener");
+                + " must implement OnFragmentInteractionListener");
         }
     }
 
@@ -198,17 +195,18 @@ public class DuMapFragment extends Fragment {
     private class MyLocationListener implements BDLocationListener {
         @Override
         public void onReceiveLocation(BDLocation bdLocation) {
-            if (bdLocation == null) return;
+            DuMapFragment.this.getActivity().getApplicationContext().getFilesDir();
+            if (bdLocation == null) { return; }
             logLocation(bdLocation);
             Log.d("asd", "dumap location received" + bdLocation.getCity());
             BaiduMap dumap = mMapView.getMap();
             dumap.setMyLocationEnabled(true);
             // 构造定位数据
             MyLocationData locData = new MyLocationData.Builder()
-                    .accuracy(bdLocation.getRadius())
-                    // 此处设置开发者获取到的方向信息，顺时针0-360
-                    .direction(100).latitude(bdLocation.getLatitude())
-                    .longitude(bdLocation.getLongitude()).build();
+                .accuracy(bdLocation.getRadius())
+                // 此处设置开发者获取到的方向信息，顺时针0-360
+                .direction(100).latitude(bdLocation.getLatitude())
+                .longitude(bdLocation.getLongitude()).build();
             // 设置定位数据
             dumap.setMyLocationData(locData);
             MapStatus.Builder builder = new MapStatus.Builder();
@@ -216,11 +214,12 @@ public class DuMapFragment extends Fragment {
             dumap.animateMapStatus(MapStatusUpdateFactory.newMapStatus(builder.build()));
             // 设置定位图层的配置（定位模式，是否允许方向信息，用户自定义定位图标）
             BitmapDescriptor mCurrentMarker = BitmapDescriptorFactory
-                    .fromResource(R.drawable.ic_navigation);
-            MyLocationConfiguration config = new MyLocationConfiguration(MyLocationConfiguration.LocationMode.NORMAL, true, mCurrentMarker);
+                .fromResource(R.drawable.ic_navigation);
+            MyLocationConfiguration config = new MyLocationConfiguration(MyLocationConfiguration.LocationMode.NORMAL,
+                true, mCurrentMarker);
             dumap.setMyLocationConfigeration(config);
             // 当不需要定位图层时关闭定位图层
-//            dumap.setMyLocationEnabled(false);
+            //            dumap.setMyLocationEnabled(false);
         }
 
         private void logLocation(BDLocation location) {

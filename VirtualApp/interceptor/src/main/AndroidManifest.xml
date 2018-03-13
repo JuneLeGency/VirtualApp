@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="june.legency.env">
+    package="june.legency.env">
 
-    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
 
     <application
         android:allowBackup="true"
@@ -10,15 +12,27 @@
         android:theme="@style/AppTheme">
 
         <meta-data
+            android:name="TencentMapSDK"
+            android:value="OKYBZ-JUB6O-ULIWD-SLQWI-F7QFO-F5FDU" />
+
+        <meta-data
             android:name="com.amap.api.v2.apikey"
-            android:value="4cc273c151498d53d08b71a6418c1cb9"/>
-        <service android:name="com.amap.api.location.APSService"/>
+            android:value="4cc273c151498d53d08b71a6418c1cb9" />
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyDpM3e4efe_lr4olEtwksulESLwhViZi64" />
+
+        <service
+            android:name="com.amap.api.location.APSService"
+            android:process="@string/setting_process" />
 
         <meta-data
             android:name="com.baidu.lbsapi.API_KEY"
             android:value="aeWfc9j1GoO53qEoqenWkEVZY22ucwGj" />
-        <service android:name="com.baidu.location.f" android:enabled="true" android:process=":remote">
-        </service>
+        <service
+            android:name="com.baidu.location.f"
+            android:enabled="true"
+            android:process="@string/setting_process" />
 
         <activity
             android:name=".activities.SettingActivity"
@@ -28,30 +42,28 @@
             android:launchMode="singleTask"
             android:process="@string/setting_process">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
+                <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER"/>
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".activities.DetailActivity">
-        </activity>
+        <activity android:name=".activities.DetailActivity" />
         <activity
             android:name=".activities.MainActivity"
             android:label="@string/title_activity_main"
             android:process="@string/setting_process"
             android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
+                <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER"/>
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
         <activity
             android:name=".activities.EnvDetailActivity"
             android:label="@string/title_activity_env_detail"
             android:process="@string/setting_process"
-            android:theme="@style/AppTheme.NoActionBar">
-        </activity>
+            android:theme="@style/AppTheme.NoActionBar" />
     </application>
 
 </manifest>

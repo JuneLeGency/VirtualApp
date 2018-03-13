@@ -206,12 +206,9 @@ public final class VClientImpl extends IVClient.Stub {
             bindApplicationNoCheck(packageName, processName, new ConditionVariable());
         } else {
             final ConditionVariable lock = new ConditionVariable();
-            VirtualRuntime.getUIHandler().post(new Runnable() {
-                @Override
-                public void run() {
-                    bindApplicationNoCheck(packageName, processName, lock);
-                    lock.open();
-                }
+            VirtualRuntime.getUIHandler().post(() -> {
+                bindApplicationNoCheck(packageName, processName, lock);
+                lock.open();
             });
             lock.block();
         }
@@ -242,7 +239,7 @@ public final class VClientImpl extends IVClient.Stub {
         AppBindData data = new AppBindData();
         InstalledAppInfo info = VirtualCore.get().getInstalledAppInfo(packageName, 0);
         if (info == null) {
-            new Exception("App not exist!").printStackTrace();
+            new Exception("App not exist!"+ packageName).printStackTrace();
             Process.killProcess(0);
             System.exit(0);
         }

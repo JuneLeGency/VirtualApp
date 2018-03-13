@@ -195,7 +195,9 @@ public class SettingActivity extends AppCompatActivity implements CompoundButton
      * show current env
      */
     private void show() {
-        if (result == null) result = new HashMap<>();
+        if (result == null) {
+            result = new HashMap<>();
+        }
         result.clear();
         EnvManager.get(this).obtainEnvIntoHash(this.result);
         changes();

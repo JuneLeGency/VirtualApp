@@ -7,7 +7,7 @@
             android:icon="@drawable/ic_menu_env"
             android:title="主页"/>
         <item
-            android:id="@+id/nav_map"
+            android:id="@+id/nav_amap"
             android:icon="@drawable/ic_map_gaode"
             android:title="高德地图"/>
         <item
@@ -15,7 +15,11 @@
             android:icon="@drawable/ic_map_du"
             android:title="百度地图"/>
         <item
-            android:id="@+id/nav_manage"
+            android:id="@+id/nav_t_map"
+            android:icon="@drawable/ic_map_tencent"
+            android:title="腾讯地图"/>
+        <item
+            android:id="@+id/nav_g_map"
             android:icon="@drawable/ic_map_google"
             android:title="谷歌地图"/>
     </group>

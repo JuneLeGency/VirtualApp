@@ -19,10 +19,15 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
 import june.legency.env.R;
 import june.legency.env.fragments.AMapFragment;
 import june.legency.env.fragments.DuMapFragment;
 import june.legency.env.fragments.MainFragment;
+import june.legency.env.fragments.TencentMapFragment;
 import net.steamcrafted.materialiconlib.MaterialDrawableBuilder;
 
 public class MainActivity extends AppCompatActivity
@@ -104,14 +109,15 @@ public class MainActivity extends AppCompatActivity
         }
         if (id == R.id.nav_main) {
             currentFragment = new MainFragment();
-        } else if (id == R.id.nav_map) {
+        } else if (id == R.id.nav_amap) {
             // Handle the camera action
             currentFragment = new AMapFragment();
         } else if (id == R.id.nav_du_map) {
             currentFragment = new DuMapFragment();
-
-        } else if (id == R.id.nav_manage) {
-
+        } else if (id == R.id.nav_t_map) {
+            currentFragment = new TencentMapFragment();
+        } else if (id == R.id.nav_g_map) {
+            currentFragment = new SupportMapFragment();
         } else if (id == R.id.nav_share) {
 
         } else if (id == R.id.nav_send) {

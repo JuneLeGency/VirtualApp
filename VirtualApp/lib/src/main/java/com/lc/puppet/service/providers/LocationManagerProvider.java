@@ -97,8 +97,10 @@ public class LocationManagerProvider extends PatchHookProvider {
             provider = LocationRequestL.getProvider.call(locationObject);
         }
         final Location fakeLocation = getLocation();
-        if (!TextUtils.isEmpty(provider))
+        if (!TextUtils.isEmpty(provider)) {
             fakeLocation.setProvider(provider);
+        }
+        fakeLocation.setTime(System.currentTimeMillis());
 
         if (listeners == null) {
             listeners = new HashMap<>();

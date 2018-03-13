@@ -5,6 +5,7 @@ import android.os.Parcelable;
 
 import com.lc.puppet.client.hook.base.InterceptorMethod;
 
+import java.lang.reflect.Method;
 import java.util.Arrays;
 
 /**
@@ -18,6 +19,12 @@ public class ICallBody implements Parcelable {
 
     public Object[] args;
 
+    private Method methodRaw;
+
+    private boolean noReturn;
+    private String callerPackage;
+    private int callerAppUserId;
+
     @Override
     public int describeContents() {
         return 0;
@@ -28,9 +35,13 @@ public class ICallBody implements Parcelable {
         dest.writeString(this.module);
         dest.writeString(this.method);
         dest.writeArray(args);
+        dest.writeByte((byte)(noReturn ? 1 : 0));
+        dest.writeString(signature);
+        dest.writeString(callerPackage);
+        dest.writeInt(callerAppUserId);
     }
 
-    public static ICallBody create(InterceptorMethod interceptorMethod){
+    public static ICallBody create(InterceptorMethod interceptorMethod) {
         return new ICallBody(interceptorMethod);
     }
 
@@ -48,20 +59,25 @@ public class ICallBody implements Parcelable {
         this.module = in.readString();
         this.method = in.readString();
         this.args = in.readArray(classLoader);
+        this.noReturn = in.readByte() != 0;
+        this.signature = in.readString();
+        this.callerPackage = in.readString();
+        this.callerAppUserId = in.readInt();
     }
 
     public static final Parcelable.ClassLoaderCreator<ICallBody> CREATOR
-            = new Parcelable.ClassLoaderCreator<ICallBody>() {
+        = new Parcelable.ClassLoaderCreator<ICallBody>() {
         @Override
         public ICallBody createFromParcel(Parcel source, ClassLoader loader) {
             return new ICallBody(source, loader);
         }
 
+        @Override
         public ICallBody createFromParcel(Parcel in) {
             return new ICallBody(in, null);
         }
 
-
+        @Override
         public ICallBody[] newArray(int size) {
             return new ICallBody[size];
         }
@@ -69,33 +85,39 @@ public class ICallBody implements Parcelable {
 
     @Override
     public String toString() {
-        return "ICallBody{" +
-                "module='" + module + '\'' +
-                ", method='" + method + '\'' +
-                ", args=" + Arrays.toString(args) +
-                '}';
+        return "ICallBody" + module + "#" + method + "#" + Arrays.toString(args);
     }
 
     private String signature;
 
     public String getBookSignature() {
-        if (signature != null) {
-            return signature;
-        }
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("@");
-        stringBuilder.append(String.valueOf(module));
-        stringBuilder.append("#");
-        stringBuilder.append(String.valueOf(method));
-        for (Object object : args) {
-            if(object==null){
-                stringBuilder.append("null");
-            }else {
-                stringBuilder.append(object.getClass().getCanonicalName());
-            }
-            stringBuilder.append("`");
-        }
-        signature = stringBuilder.toString();
         return signature;
+    }
+
+    public boolean hasReturn() {
+        return !noReturn;
+    }
+
+    public ICallBody method(Method method) {
+        this.methodRaw = method;
+        generateBookSignature();
+        return this;
+    }
+
+    private void generateBookSignature() {
+        if (methodRaw.getReturnType().equals(Void.TYPE)) {
+            this.noReturn = true;
+        }
+        signature = methodRaw.toGenericString();
+    }
+
+    public ICallBody callerPackage(String callerPackage) {
+        this.callerPackage = callerPackage;
+        return this;
+    }
+
+    public ICallBody callerAppUserId(int callerAppUserId) {
+        this.callerAppUserId = callerAppUserId;
+        return this;
     }
 }

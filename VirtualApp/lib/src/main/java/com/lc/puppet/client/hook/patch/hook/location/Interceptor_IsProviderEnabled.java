@@ -1,32 +1,27 @@
 package com.lc.puppet.client.hook.patch.hook.location;
 
-import com.lc.puppet.client.hook.base.InterceptorServiceHook;
-import com.lc.puppet.service.providers.LocationAMAPHack;
+import java.lang.reflect.Method;
+
+import com.lc.puppet.client.hook.base.InterceptorMethod;
 import com.lody.virtual.client.hook.base.MethodInvocationProxy;
 import com.lody.virtual.client.hook.proxies.location.LocationManagerStub;
+import com.lody.virtual.client.hook.utils.MethodParameterUtils;
 
 /**
  * @author Junelegency
  *
  */
-public class Interceptor_RequestLocationUpdates extends InterceptorServiceHook {
+public class Interceptor_IsProviderEnabled extends InterceptorMethod {
 
 
     @Override
     public String getMethodName() {
-        return "requestLocationUpdates";
+        return "isProviderEnabled";
     }
 
-
     @Override
-    public boolean isOnHookConsumed() {
+    public Object call(Object who, Method method, Object... args) throws Throwable {
         return true;
-    }
-
-
-    @Override
-    public boolean isEnable() {
-        return LocationAMAPHack.LOCATION_MOCK_GPS;
     }
 
     @Override

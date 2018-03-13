@@ -22,7 +22,7 @@ public class IObComment {
     static HashMap<IObIndex, Comment> hashMap;
 
     public static void get(Context context) {
-        if(hashMap!=null)return;
+        if (hashMap != null) { return; }
         InputStream raw = context.getResources().openRawResource(R.raw.iob);
         Reader rd = new BufferedReader(new InputStreamReader(raw));
         Gson gson = new Gson();
@@ -34,10 +34,10 @@ public class IObComment {
             hashMap.put(comment.getIndex(), comment);
         }
     }
-    public static Comment get(String key){
+
+    public static Comment get(String key) {
         return hashMap.get(IObIndex.valueOf(key));
     }
-
 
     public class Comment {
 
@@ -134,27 +134,29 @@ public class IObComment {
         public void setParams(List<?> params) {
             this.params = params;
         }
-        public String toMarkDown(String result){
-            String  template= "# %s\n" +
-                    "\n" +
-                    "%s\n" +
-                    "## service\n" +
-                    "`%s` %s \n" +
-                    "\n" +
-                    "### method\n" +
-                    "\n" +
-                    "%s.\n" +
-                    "\n" +
-                    "### isSynchronization\n" +
-                    "%b\n" +
-                    "\n" +
-                    "### 结果\n" +
-                    "```json\n" +
-                    "  %s\n" +
-                    "```";;
-            return String.format(template,index.toString(),comment,sys_manager,sys_service,method,is_sync,result);
+
+        public String toMarkDown(String result) {
+            String template = "# %s\n" +
+                "\n" +
+                "%s\n" +
+                "## service\n" +
+                "`%s` %s \n" +
+                "\n" +
+                "### method\n" +
+                "\n" +
+                "%s.\n" +
+                "\n" +
+                "### isSynchronization\n" +
+                "%b\n" +
+                "\n" +
+                "### 结果\n" +
+                "```json\n" +
+                "  %s\n" +
+                "```";
+            ;
+            return String.format(template, index.toString(), comment, sys_manager, sys_service, method, is_sync,
+                result);
         }
     }
-
 
 }
