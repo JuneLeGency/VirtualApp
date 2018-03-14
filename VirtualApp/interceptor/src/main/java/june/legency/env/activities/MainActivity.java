@@ -26,6 +26,7 @@ import com.google.android.gms.maps.SupportMapFragment;
 import june.legency.env.R;
 import june.legency.env.fragments.AMapFragment;
 import june.legency.env.fragments.DuMapFragment;
+import june.legency.env.fragments.GoogleMapFragment;
 import june.legency.env.fragments.MainFragment;
 import june.legency.env.fragments.TencentMapFragment;
 import net.steamcrafted.materialiconlib.MaterialDrawableBuilder;
@@ -117,7 +118,7 @@ public class MainActivity extends AppCompatActivity
         } else if (id == R.id.nav_t_map) {
             currentFragment = new TencentMapFragment();
         } else if (id == R.id.nav_g_map) {
-            currentFragment = new SupportMapFragment();
+            currentFragment = new GoogleMapFragment();
         } else if (id == R.id.nav_share) {
 
         } else if (id == R.id.nav_send) {
