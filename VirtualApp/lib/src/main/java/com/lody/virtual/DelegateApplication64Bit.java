@@ -33,7 +33,7 @@ public abstract class DelegateApplication64Bit extends Application {
     protected abstract String get32BitPackageName();
 
 
-    private static Field findField(Object instance, String name) throws NoSuchFieldException {
+    public static Field findField(Object instance, String name) throws NoSuchFieldException {
         for (Class<?> clazz = instance.getClass(); clazz != null; clazz = clazz.getSuperclass()) {
             try {
                 Field field = clazz.getDeclaredField(name);
@@ -113,6 +113,7 @@ public abstract class DelegateApplication64Bit extends Application {
 
     }
 
+    @Override
     protected void attachBaseContext(Context context) {
         super.attachBaseContext(context);
         try {
@@ -166,6 +167,7 @@ public abstract class DelegateApplication64Bit extends Application {
 
     }
 
+    @Override
     public void onConfigurationChanged(Configuration configuration) {
         super.onConfigurationChanged(configuration);
         if (mTarget != null) {

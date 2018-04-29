@@ -129,7 +129,8 @@ public final class VClientImpl extends IVClient.Stub {
 
     public String getCurrentPackage() {
         return mBoundApplication != null ?
-                mBoundApplication.appInfo.packageName : VPackageManager.get().getNameForUid(getVUid());
+                mBoundApplication.appInfo
+                    .packageName : VPackageManager.get().getNameForUid(getVUid());
     }
 
     public ApplicationInfo getCurrentApplicationInfo() {

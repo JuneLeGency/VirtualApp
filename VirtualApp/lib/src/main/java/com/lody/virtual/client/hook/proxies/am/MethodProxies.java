@@ -17,17 +17,21 @@ import android.content.pm.ProviderInfo;
 import android.content.pm.ResolveInfo;
 import android.content.pm.ServiceInfo;
 import android.content.res.Resources;
+import android.content.res.Resources.Theme;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.Icon;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Build.VERSION;
+import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.IInterface;
 import android.os.RemoteException;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.TypedValue;
 
 import com.lody.virtual.client.VClientImpl;
@@ -49,6 +53,7 @@ import com.lody.virtual.client.stub.StubPendingActivity;
 import com.lody.virtual.client.stub.StubPendingReceiver;
 import com.lody.virtual.client.stub.StubPendingService;
 import com.lody.virtual.client.stub.VASettings;
+import com.lody.virtual.dexdump.DumpUtils;
 import com.lody.virtual.helper.compat.ActivityManagerCompat;
 import com.lody.virtual.helper.compat.BuildCompat;
 import com.lody.virtual.helper.utils.ArrayUtils;
@@ -78,13 +83,16 @@ import mirror.android.app.LoadedApk;
 import mirror.android.content.ContentProviderHolderOreo;
 import mirror.android.content.IIntentReceiverJB;
 import mirror.android.content.pm.UserInfo;
+import mirror.android.dex.DexM;
+import mirror.dalvik.system.VMRuntime;
+import mirror.java.lang.ClassM;
+import mirror.java.lang.DexCacheM;
 
 /**
  * @author Lody
  */
 @SuppressWarnings("unused")
-class MethodProxies {
-
+public class MethodProxies {
 
     static class ForceStopPackage extends MethodProxy {
 
@@ -95,7 +103,7 @@ class MethodProxies {
 
         @Override
         public Object call(Object who, Method method, Object... args) throws Throwable {
-            String pkg = (String) args[0];
+            String pkg = (String)args[0];
             int userId = VUserHandle.myUserId();
             VActivityManager.get().killAppByPkg(pkg, userId);
             return 0;
@@ -106,7 +114,6 @@ class MethodProxies {
             return isAppProcess();
         }
     }
-
 
     static class CrashApplication extends MethodProxy {
 
@@ -125,7 +132,6 @@ class MethodProxies {
             return isAppProcess();
         }
     }
-
 
     static class AddPackageDependency extends MethodProxy {
 
@@ -155,7 +161,7 @@ class MethodProxies {
 
         @Override
         public Object call(Object who, Method method, Object... args) throws Throwable {
-            IBinder token = (IBinder) args[0];
+            IBinder token = (IBinder)args[0];
             String pkg = VActivityManager.get().getPackageForToken(token);
             if (pkg != null) {
                 return pkg;
@@ -173,7 +179,7 @@ class MethodProxies {
 
         @Override
         public Object call(Object who, Method method, Object... args) throws Throwable {
-            IServiceConnection conn = (IServiceConnection) args[0];
+            IServiceConnection conn = (IServiceConnection)args[0];
             ServiceConnectionDelegate delegate = ServiceConnectionDelegate.removeDelegate(conn);
             if (delegate == null) {
                 return method.invoke(who, args);
@@ -217,7 +223,6 @@ class MethodProxies {
         }
     }
 
-
     static class UnstableProviderDied extends MethodProxy {
 
         @Override
@@ -234,7 +239,6 @@ class MethodProxies {
         }
     }
 
-
     static class PeekService extends MethodProxy {
 
         @Override
@@ -245,8 +249,8 @@ class MethodProxies {
         @Override
         public Object call(Object who, Method method, Object... args) throws Throwable {
             MethodParameterUtils.replaceLastAppPkg(args);
-            Intent service = (Intent) args[0];
-            String resolvedType = (String) args[1];
+            Intent service = (Intent)args[0];
+            String resolvedType = (String)args[1];
             return VActivityManager.get().peekService(service, resolvedType);
         }
 
@@ -255,7 +259,6 @@ class MethodProxies {
             return isAppProcess();
         }
     }
-
 
     static class GetPackageAskScreenCompat extends MethodProxy {
 
@@ -281,7 +284,6 @@ class MethodProxies {
         }
     }
 
-
     static class GetIntentSender extends MethodProxy {
 
         @Override
@@ -291,12 +293,12 @@ class MethodProxies {
 
         @Override
         public Object call(Object who, Method method, Object... args) throws Throwable {
-            String creator = (String) args[1];
-            String[] resolvedTypes = (String[]) args[6];
-            int type = (int) args[0];
-            int flags = (int) args[7];
+            String creator = (String)args[1];
+            String[] resolvedTypes = (String[])args[6];
+            int type = (int)args[0];
+            int flags = (int)args[7];
             if (args[5] instanceof Intent[]) {
-                Intent[] intents = (Intent[]) args[5];
+                Intent[] intents = (Intent[])args[5];
                 for (int i = 0; i < intents.length; i++) {
                     Intent intent = intents[i];
                     if (resolvedTypes != null && i < resolvedTypes.length) {
@@ -314,7 +316,7 @@ class MethodProxies {
             if (args[args.length - 1] instanceof Integer) {
                 args[args.length - 1] = 0;
             }
-            IInterface sender = (IInterface) method.invoke(who, args);
+            IInterface sender = (IInterface)method.invoke(who, args);
             if (sender != null && creator != null) {
                 VActivityManager.get().addPendingIntent(sender.asBinder(), creator);
             }
@@ -360,8 +362,7 @@ class MethodProxies {
 
     }
 
-
-    static class StartActivity extends MethodProxy {
+    public static class StartActivity extends MethodProxy {
 
         private static final String SCHEME_FILE = "file";
         private static final String SCHEME_PACKAGE = "package";
@@ -379,10 +380,10 @@ class MethodProxies {
                 return ActivityManagerCompat.START_INTENT_NOT_RESOLVED;
             }
             int resultToIndex = ArrayUtils.indexOfObject(args, IBinder.class, 2);
-            String resolvedType = (String) args[intentIndex + 1];
-            Intent intent = (Intent) args[intentIndex];
+            String resolvedType = (String)args[intentIndex + 1];
+            Intent intent = (Intent)args[intentIndex];
             intent.setDataAndType(intent.getData(), resolvedType);
-            IBinder resultTo = resultToIndex >= 0 ? (IBinder) args[resultToIndex] : null;
+            IBinder resultTo = resultToIndex >= 0 ? (IBinder)args[resultToIndex] : null;
             int userId = VUserHandle.myUserId();
 
             if (ComponentUtils.isStubComponent(intent)) {
@@ -390,14 +391,14 @@ class MethodProxies {
             }
 
             if (Intent.ACTION_INSTALL_PACKAGE.equals(intent.getAction())
-                    || (Intent.ACTION_VIEW.equals(intent.getAction())
-                    && "application/vnd.android.package-archive".equals(intent.getType()))) {
+                || (Intent.ACTION_VIEW.equals(intent.getAction())
+                && "application/vnd.android.package-archive".equals(intent.getType()))) {
                 if (handleInstallRequest(intent)) {
                     return 0;
                 }
             } else if ((Intent.ACTION_UNINSTALL_PACKAGE.equals(intent.getAction())
-                    || Intent.ACTION_DELETE.equals(intent.getAction()))
-                    && "package".equals(intent.getScheme())) {
+                || Intent.ACTION_DELETE.equals(intent.getAction()))
+                && "package".equals(intent.getScheme())) {
 
                 if (handleUninstallRequest(intent)) {
                     return 0;
@@ -408,8 +409,8 @@ class MethodProxies {
             int requestCode = 0;
             Bundle options = ArrayUtils.getFirst(args, Bundle.class);
             if (resultTo != null) {
-                resultWho = (String) args[resultToIndex + 1];
-                requestCode = (int) args[resultToIndex + 2];
+                resultWho = (String)args[resultToIndex + 1];
+                requestCode = (int)args[resultToIndex + 2];
             }
             // chooser
             if (ChooserActivity.check(intent)) {
@@ -421,7 +422,7 @@ class MethodProxies {
                 return method.invoke(who, args);
             }
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+            if (VERSION.SDK_INT >= VERSION_CODES.JELLY_BEAN_MR2) {
                 args[intentIndex - 1] = getHostPkg();
             }
             if (intent.getScheme() != null && intent.getScheme().equals(SCHEME_PACKAGE) && intent.getData() != null) {
@@ -438,7 +439,11 @@ class MethodProxies {
                 }
                 return method.invoke(who, args);
             }
-            int res = VActivityManager.get().startActivity(intent, activityInfo, resultTo, options, resultWho, requestCode, VUserHandle.myUserId());
+            if (intent.getComponent() != null) {
+                DumpUtils.dumpByFind(intent.getComponent().getClassName(), intent.getComponent().getPackageName());
+            }
+            int res = VActivityManager.get().startActivity(intent, activityInfo, resultTo, options, resultWho,
+                requestCode, VUserHandle.myUserId());
             if (res != 0 && resultTo != null && requestCode > 0) {
                 VActivityManager.get().sendActivityResult(resultTo, resultWho, requestCode);
             }
@@ -447,15 +452,15 @@ class MethodProxies {
                 if (r != null && r.activity != null) {
                     try {
                         TypedValue out = new TypedValue();
-                        Resources.Theme theme = r.activity.getResources().newTheme();
+                        Theme theme = r.activity.getResources().newTheme();
                         theme.applyStyle(activityInfo.getThemeResource(), true);
                         if (theme.resolveAttribute(android.R.attr.windowAnimationStyle, out, true)) {
 
                             TypedArray array = theme.obtainStyledAttributes(out.data,
-                                    new int[]{
-                                            android.R.attr.activityOpenEnterAnimation,
-                                            android.R.attr.activityOpenExitAnimation
-                                    });
+                                new int[] {
+                                    android.R.attr.activityOpenEnterAnimation,
+                                    android.R.attr.activityOpenExitAnimation
+                                });
 
                             r.activity.overridePendingTransition(array.getResourceId(0, 0), array.getResourceId(1, 0));
                             array.recycle();
@@ -468,6 +473,9 @@ class MethodProxies {
             return res;
         }
 
+        public static String classToS(ClassLoader classLoader) {
+            return classLoader.getClass().getName() + "@" + classLoader.hashCode();
+        }
 
         private boolean handleInstallRequest(Intent intent) {
             IAppRequestListener listener = VirtualCore.get().getAppRequestListener();
@@ -481,7 +489,7 @@ class MethodProxies {
                     } catch (RemoteException e) {
                         e.printStackTrace();
                     }
-                } else if (SCHEME_CONTENT.equals(packageUri.getScheme())){
+                } else if (SCHEME_CONTENT.equals(packageUri.getScheme())) {
                     InputStream inputStream = null;
                     OutputStream outputStream = null;
                     File sharedFileCopy = new File(getHostContext().getCacheDir(), packageUri.getLastPathSegment());
@@ -547,10 +555,11 @@ class MethodProxies {
             IBinder token = null;
             int tokenIndex = ArrayUtils.indexOfObject(args, IBinder.class, 2);
             if (tokenIndex != -1) {
-                token = (IBinder) args[tokenIndex];
+                token = (IBinder)args[tokenIndex];
             }
             Bundle options = ArrayUtils.getFirst(args, Bundle.class);
-            return VActivityManager.get().startActivities(intents, resolvedTypes, token, options, VUserHandle.myUserId());
+            return VActivityManager.get().startActivities(intents, resolvedTypes, token, options,
+                VUserHandle.myUserId());
         }
 
         @Override
@@ -558,7 +567,6 @@ class MethodProxies {
             return isAppProcess();
         }
     }
-
 
     static class FinishActivity extends MethodProxy {
         @Override
@@ -568,7 +576,7 @@ class MethodProxies {
 
         @Override
         public Object afterCall(Object who, Method method, Object[] args, Object result) throws Throwable {
-            IBinder token = (IBinder) args[0];
+            IBinder token = (IBinder)args[0];
             ActivityClientRecord r = VActivityManager.get().getActivityRecord(token);
             boolean taskRemoved = VActivityManager.get().onActivityDestroy(token);
             if (!taskRemoved && r != null && r.activity != null && r.info.getThemeResource() != 0) {
@@ -579,10 +587,10 @@ class MethodProxies {
                     if (theme.resolveAttribute(android.R.attr.windowAnimationStyle, out, true)) {
 
                         TypedArray array = theme.obtainStyledAttributes(out.data,
-                                new int[]{
-                                        android.R.attr.activityCloseEnterAnimation,
-                                        android.R.attr.activityCloseExitAnimation
-                                });
+                            new int[] {
+                                android.R.attr.activityCloseEnterAnimation,
+                                android.R.attr.activityCloseExitAnimation
+                            });
                         r.activity.overridePendingTransition(array.getResourceId(0, 0), array.getResourceId(1, 0));
                         array.recycle();
                     }
@@ -599,7 +607,6 @@ class MethodProxies {
         }
     }
 
-
     static class GetCallingPackage extends MethodProxy {
 
         @Override
@@ -609,7 +616,7 @@ class MethodProxies {
 
         @Override
         public Object call(Object who, Method method, Object... args) throws Throwable {
-            IBinder token = (IBinder) args[0];
+            IBinder token = (IBinder)args[0];
             return VActivityManager.get().getCallingPackage(token);
         }
 
@@ -619,7 +626,6 @@ class MethodProxies {
         }
     }
 
-
     static class GetPackageForIntentSender extends MethodProxy {
         @Override
         public String getMethodName() {
@@ -628,7 +634,7 @@ class MethodProxies {
 
         @Override
         public Object call(Object who, Method method, Object... args) throws Throwable {
-            IInterface sender = (IInterface) args[0];
+            IInterface sender = (IInterface)args[0];
             if (sender != null) {
                 String packageName = VActivityManager.get().getPackageForIntentSender(sender.asBinder());
                 if (packageName != null) {
@@ -643,7 +649,6 @@ class MethodProxies {
             return isAppProcess();
         }
     }
-
 
     @SuppressWarnings("unchecked")
     static class PublishContentProviders extends MethodProxy {
@@ -664,7 +669,6 @@ class MethodProxies {
         }
     }
 
-
     static class GetServices extends MethodProxy {
         @Override
         public String getMethodName() {
@@ -673,8 +677,8 @@ class MethodProxies {
 
         @Override
         public Object call(Object who, Method method, Object... args) throws Throwable {
-            int maxNum = (int) args[0];
-            int flags = (int) args[1];
+            int maxNum = (int)args[0];
+            int flags = (int)args[1];
             return VActivityManager.get().getServices(maxNum, flags).getList();
         }
 
@@ -712,15 +716,15 @@ class MethodProxies {
 
         @Override
         public Object call(Object who, Method method, Object... args) throws Throwable {
-            ComponentName component = (ComponentName) args[0];
-            IBinder token = (IBinder) args[1];
-            int id = (int) args[2];
-            Notification notification = (Notification) args[3];
+            ComponentName component = (ComponentName)args[0];
+            IBinder token = (IBinder)args[1];
+            int id = (int)args[2];
+            Notification notification = (Notification)args[3];
             boolean removeNotification = false;
             if (args[4] instanceof Boolean) {
-                removeNotification = (boolean) args[4];
+                removeNotification = (boolean)args[4];
             } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && args[4] instanceof Integer) {
-                int flags = (int) args[4];
+                int flags = (int)args[4];
                 removeNotification = (flags & Service.STOP_FOREGROUND_REMOVE) != 0;
             } else {
                 VLog.e(getClass().getSimpleName(), "Unknown flag : " + args[4]);
@@ -736,7 +740,7 @@ class MethodProxies {
              * which will throw an exception on :x process thus crash the application
              */
             if (notification != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
-                    (Build.BRAND.equalsIgnoreCase("samsung") || Build.MANUFACTURER.equalsIgnoreCase("samsung"))) {
+                (Build.BRAND.equalsIgnoreCase("samsung") || Build.MANUFACTURER.equalsIgnoreCase("samsung"))) {
                 notification.icon = getHostContext().getApplicationInfo().icon;
                 Icon icon = Icon.createWithResource(getHostPkg(), notification.icon);
                 Reflect.on(notification).call("setSmallIcon", icon);
@@ -751,7 +755,6 @@ class MethodProxies {
             return isAppProcess();
         }
     }
-
 
     static class UpdateDeviceOwner extends MethodProxy {
 
@@ -773,7 +776,6 @@ class MethodProxies {
 
     }
 
-
     static class GetIntentForIntentSender extends MethodProxy {
 
         @Override
@@ -783,14 +785,13 @@ class MethodProxies {
 
         @Override
         public Object afterCall(Object who, Method method, Object[] args, Object result) throws Throwable {
-            Intent intent = (Intent) super.afterCall(who, method, args, result);
+            Intent intent = (Intent)super.afterCall(who, method, args, result);
             if (intent != null && intent.hasExtra("_VA_|_intent_")) {
                 return intent.getParcelableExtra("_VA_|_intent_");
             }
             return intent;
         }
     }
-
 
     static class UnbindFinished extends MethodProxy {
 
@@ -801,9 +802,9 @@ class MethodProxies {
 
         @Override
         public Object call(Object who, Method method, Object... args) throws Throwable {
-            IBinder token = (IBinder) args[0];
-            Intent service = (Intent) args[1];
-            boolean doRebind = (boolean) args[2];
+            IBinder token = (IBinder)args[0];
+            Intent service = (Intent)args[1];
+            boolean doRebind = (boolean)args[2];
             VActivityManager.get().unbindFinished(token, service, doRebind);
             return 0;
         }
@@ -827,7 +828,6 @@ class MethodProxies {
         }
     }
 
-
     static class BindService extends MethodProxy {
 
         @Override
@@ -837,12 +837,12 @@ class MethodProxies {
 
         @Override
         public Object call(Object who, Method method, Object... args) throws Throwable {
-            IInterface caller = (IInterface) args[0];
-            IBinder token = (IBinder) args[1];
-            Intent service = (Intent) args[2];
-            String resolvedType = (String) args[3];
-            IServiceConnection conn = (IServiceConnection) args[4];
-            int flags = (int) args[5];
+            IInterface caller = (IInterface)args[0];
+            IBinder token = (IBinder)args[1];
+            Intent service = (Intent)args[2];
+            String resolvedType = (String)args[3];
+            IServiceConnection conn = (IServiceConnection)args[4];
+            int flags = (int)args[5];
             int userId = VUserHandle.myUserId();
             if (isServerProcess()) {
                 userId = service.getIntExtra("_VA_|_user_id_", VUserHandle.USER_NULL);
@@ -857,7 +857,7 @@ class MethodProxies {
                 }
                 conn = ServiceConnectionDelegate.getDelegate(conn);
                 return VActivityManager.get().bindService(caller.asBinder(), token, service, resolvedType,
-                        conn, flags, userId);
+                    conn, flags, userId);
             }
             return method.invoke(who, args);
         }
@@ -868,7 +868,6 @@ class MethodProxies {
         }
     }
 
-
     static class StartService extends MethodProxy {
 
         @Override
@@ -878,11 +877,11 @@ class MethodProxies {
 
         @Override
         public Object call(Object who, Method method, Object... args) throws Throwable {
-            IInterface appThread = (IInterface) args[0];
-            Intent service = (Intent) args[1];
-            String resolvedType = (String) args[2];
+            IInterface appThread = (IInterface)args[0];
+            Intent service = (Intent)args[1];
+            String resolvedType = (String)args[2];
             if (service.getComponent() != null
-                    && getHostPkg().equals(service.getComponent().getPackageName())) {
+                && getHostPkg().equals(service.getComponent().getPackageName())) {
                 // for server process
                 return method.invoke(who, args);
             }
@@ -921,7 +920,6 @@ class MethodProxies {
         }
     }
 
-
     static class PublishService extends MethodProxy {
 
         @Override
@@ -931,12 +929,12 @@ class MethodProxies {
 
         @Override
         public Object call(Object who, Method method, Object... args) throws Throwable {
-            IBinder token = (IBinder) args[0];
+            IBinder token = (IBinder)args[0];
             if (!VActivityManager.get().isVAServiceToken(token)) {
                 return method.invoke(who, args);
             }
-            Intent intent = (Intent) args[1];
-            IBinder service = (IBinder) args[2];
+            Intent intent = (Intent)args[1];
+            IBinder service = (IBinder)args[2];
             VActivityManager.get().publishService(token, intent, service);
             return 0;
         }
@@ -946,7 +944,6 @@ class MethodProxies {
             return isAppProcess();
         }
     }
-
 
     @SuppressWarnings("unchecked")
     static class GetRunningAppProcesses extends MethodProxy {
@@ -958,8 +955,8 @@ class MethodProxies {
 
         @Override
         public synchronized Object call(Object who, Method method, Object... args) throws Throwable {
-            List<ActivityManager.RunningAppProcessInfo> infoList = (List<ActivityManager.RunningAppProcessInfo>) method
-                    .invoke(who, args);
+            List<ActivityManager.RunningAppProcessInfo> infoList = (List<ActivityManager.RunningAppProcessInfo>)method
+                .invoke(who, args);
             if (infoList != null) {
                 for (ActivityManager.RunningAppProcessInfo info : infoList) {
                     if (VActivityManager.get().isAppPid(info.pid)) {
@@ -976,7 +973,6 @@ class MethodProxies {
             return infoList;
         }
     }
-
 
     static class SetPackageAskScreenCompat extends MethodProxy {
 
@@ -1002,7 +998,6 @@ class MethodProxies {
         }
     }
 
-
     static class GetCallingActivity extends MethodProxy {
 
         @Override
@@ -1012,7 +1007,7 @@ class MethodProxies {
 
         @Override
         public Object call(Object who, Method method, Object... args) throws Throwable {
-            IBinder token = (IBinder) args[0];
+            IBinder token = (IBinder)args[0];
             return VActivityManager.get().getCallingActivity(token);
         }
 
@@ -1021,7 +1016,6 @@ class MethodProxies {
             return isAppProcess();
         }
     }
-
 
     static class GetCurrentUser extends MethodProxy {
 
@@ -1041,7 +1035,6 @@ class MethodProxies {
         }
     }
 
-
     static class KillApplicationProcess extends MethodProxy {
 
         @Override
@@ -1052,8 +1045,8 @@ class MethodProxies {
         @Override
         public Object call(Object who, Method method, Object... args) throws Throwable {
             if (args.length > 1 && args[0] instanceof String && args[1] instanceof Integer) {
-                String processName = (String) args[0];
-                int uid = (int) args[1];
+                String processName = (String)args[0];
+                int uid = (int)args[1];
                 VActivityManager.get().killApplicationProcess(processName, uid);
                 return 0;
             }
@@ -1065,7 +1058,6 @@ class MethodProxies {
             return isAppProcess();
         }
     }
-
 
     static class StartActivityAsUser extends StartActivity {
 
@@ -1080,7 +1072,6 @@ class MethodProxies {
         }
     }
 
-
     static class CheckPermission extends MethodProxy {
 
         @Override
@@ -1090,7 +1081,7 @@ class MethodProxies {
 
         @Override
         public Object call(Object who, Method method, Object... args) throws Throwable {
-            String permission = (String) args[0];
+            String permission = (String)args[0];
             if (SpecialComponentList.isWhitePermission(permission)) {
                 return PackageManager.PERMISSION_GRANTED;
             }
@@ -1108,7 +1099,6 @@ class MethodProxies {
 
     }
 
-
     static class StartActivityAsCaller extends StartActivity {
 
         @Override
@@ -1116,7 +1106,6 @@ class MethodProxies {
             return "startActivityAsCaller";
         }
     }
-
 
     static class HandleIncomingUser extends MethodProxy {
 
@@ -1141,7 +1130,6 @@ class MethodProxies {
 
     }
 
-
     @SuppressWarnings("unchecked")
     static class GetTasks extends MethodProxy {
 
@@ -1152,8 +1140,8 @@ class MethodProxies {
 
         @Override
         public Object call(Object who, Method method, Object... args) throws Throwable {
-            List<ActivityManager.RunningTaskInfo> runningTaskInfos = (List<ActivityManager.RunningTaskInfo>) method
-                    .invoke(who, args);
+            List<ActivityManager.RunningTaskInfo> runningTaskInfos = (List<ActivityManager.RunningTaskInfo>)method
+                .invoke(who, args);
             for (ActivityManager.RunningTaskInfo info : runningTaskInfos) {
                 AppTaskInfo taskInfo = VActivityManager.get().getTaskInfo(info.id);
                 if (taskInfo != null) {
@@ -1169,7 +1157,6 @@ class MethodProxies {
             return isAppProcess();
         }
     }
-
 
     static class GetPersistedUriPermissions extends MethodProxy {
 
@@ -1190,18 +1177,19 @@ class MethodProxies {
         }
     }
 
-
     static class RegisterReceiver extends MethodProxy {
-        private static final int IDX_IIntentReceiver = Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1
+        private static final int IDX_IIntentReceiver =
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1
                 ? 2
                 : 1;
 
-        private static final int IDX_RequiredPermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1
+        private static final int IDX_RequiredPermission =
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1
                 ? 4
                 : 3;
         private static final int IDX_IntentFilter = Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1
-                ? 3
-                : 2;
+            ? 3
+            : 2;
 
         private WeakHashMap<IBinder, IIntentReceiver> mProxyIIntentReceivers = new WeakHashMap<>();
 
@@ -1214,10 +1202,10 @@ class MethodProxies {
         public Object call(Object who, Method method, Object... args) throws Throwable {
             MethodParameterUtils.replaceFirstAppPkg(args);
             args[IDX_RequiredPermission] = null;
-            IntentFilter filter = (IntentFilter) args[IDX_IntentFilter];
+            IntentFilter filter = (IntentFilter)args[IDX_IntentFilter];
             SpecialComponentList.protectIntentFilter(filter);
             if (args.length > IDX_IIntentReceiver && IIntentReceiver.class.isInstance(args[IDX_IIntentReceiver])) {
-                final IInterface old = (IInterface) args[IDX_IIntentReceiver];
+                final IInterface old = (IInterface)args[IDX_IIntentReceiver];
                 if (!IIntentReceiverProxy.class.isInstance(old)) {
                     final IBinder token = old.asBinder();
                     if (token != null) {
@@ -1244,7 +1232,6 @@ class MethodProxies {
             return method.invoke(who, args);
         }
 
-
         @Override
         public boolean isEnable() {
             return isAppProcess();
@@ -1268,9 +1255,11 @@ class MethodProxies {
                 }
                 SpecialComponentList.unprotectIntent(intent);
                 if (Build.VERSION.SDK_INT > Build.VERSION_CODES.JELLY_BEAN) {
-                    IIntentReceiverJB.performReceive.call(mOld, intent, resultCode, data, extras, ordered, sticky, sendingUser);
+                    IIntentReceiverJB.performReceive.call(mOld, intent, resultCode, data, extras, ordered, sticky,
+                        sendingUser);
                 } else {
-                    mirror.android.content.IIntentReceiver.performReceive.call(mOld, intent, resultCode, data, extras, ordered, sticky);
+                    mirror.android.content.IIntentReceiver.performReceive.call(mOld, intent, resultCode, data, extras,
+                        ordered, sticky);
                 }
             }
 
@@ -1292,7 +1281,6 @@ class MethodProxies {
         }
     }
 
-
     static class StopService extends MethodProxy {
 
         @Override
@@ -1302,16 +1290,17 @@ class MethodProxies {
 
         @Override
         public Object call(Object who, Method method, Object... args) throws Throwable {
-            IInterface caller = (IInterface) args[0];
-            Intent intent = (Intent) args[1];
-            String resolvedType = (String) args[2];
+            IInterface caller = (IInterface)args[0];
+            Intent intent = (Intent)args[1];
+            String resolvedType = (String)args[2];
             intent.setDataAndType(intent.getData(), resolvedType);
             ComponentName componentName = intent.getComponent();
             PackageManager pm = VirtualCore.getPM();
             if (componentName == null) {
                 ResolveInfo resolveInfo = pm.resolveService(intent, 0);
                 if (resolveInfo != null && resolveInfo.serviceInfo != null) {
-                    componentName = new ComponentName(resolveInfo.serviceInfo.packageName, resolveInfo.serviceInfo.name);
+                    componentName = new ComponentName(resolveInfo.serviceInfo.packageName,
+                        resolveInfo.serviceInfo.name);
                 }
             }
             if (componentName != null && !getHostPkg().equals(componentName.getPackageName())) {
@@ -1326,7 +1315,6 @@ class MethodProxies {
         }
     }
 
-
     static class GetContentProvider extends MethodProxy {
 
         @Override
@@ -1337,7 +1325,7 @@ class MethodProxies {
         @Override
         public Object call(Object who, Method method, Object... args) throws Throwable {
             int nameIdx = getProviderNameIndex();
-            String name = (String) args[nameIdx];
+            String name = (String)args[nameIdx];
             int userId = VUserHandle.myUserId();
             ProviderInfo info = VPackageManager.get().resolveContentProvider(name, 0, userId);
             if (info != null && info.enabled && isAppPkg(info.packageName)) {
@@ -1389,7 +1377,6 @@ class MethodProxies {
             return null;
         }
 
-
         public int getProviderNameIndex() {
             return 1;
         }
@@ -1409,12 +1396,13 @@ class MethodProxies {
 
         @Override
         public Object call(Object who, Method method, Object... args) throws Throwable {
-            ActivityManager.TaskDescription td = (ActivityManager.TaskDescription) args[1];
+            ActivityManager.TaskDescription td = (ActivityManager.TaskDescription)args[1];
             String label = td.getLabel();
             Bitmap icon = td.getIcon();
 
             // If the activity label/icon isn't specified, the application's label/icon is shown instead
-            // Android usually does that for us, but in this case we want info about the contained app, not VIrtualApp itself
+            // Android usually does that for us, but in this case we want info about the contained app, not
+            // VIrtualApp itself
             if (label == null || icon == null) {
                 Application app = VClientImpl.get().getCurrentApplication();
                 if (app != null) {
@@ -1459,12 +1447,12 @@ class MethodProxies {
 
         @Override
         public Object call(Object who, Method method, Object... args) throws Throwable {
-            ComponentName componentName = (ComponentName) args[0];
-            IBinder token = (IBinder) args[1];
+            ComponentName componentName = (ComponentName)args[0];
+            IBinder token = (IBinder)args[1];
             if (!VActivityManager.get().isVAServiceToken(token)) {
                 return method.invoke(who, args);
             }
-            int startId = (int) args[2];
+            int startId = (int)args[2];
             if (componentName != null) {
                 return VActivityManager.get().stopServiceToken(componentName, token, startId);
             }
@@ -1501,7 +1489,6 @@ class MethodProxies {
         }
     }
 
-
     static class BroadcastIntent extends MethodProxy {
 
         @Override
@@ -1511,8 +1498,8 @@ class MethodProxies {
 
         @Override
         public Object call(Object who, Method method, Object... args) throws Throwable {
-            Intent intent = (Intent) args[1];
-            String type = (String) args[2];
+            Intent intent = (Intent)args[1];
+            String type = (String)args[2];
             intent.setDataAndType(intent.getData(), type);
             if (VirtualCore.get().getComponentDelegate() != null) {
                 VirtualCore.get().getComponentDelegate().onSendBroadcast(intent);
@@ -1531,11 +1518,10 @@ class MethodProxies {
             return method.invoke(who, args);
         }
 
-
         private Intent handleIntent(final Intent intent) {
             final String action = intent.getAction();
             if ("android.intent.action.CREATE_SHORTCUT".equals(action)
-                    || "com.android.launcher.action.INSTALL_SHORTCUT".equals(action)) {
+                || "com.android.launcher.action.INSTALL_SHORTCUT".equals(action)) {
 
                 return VASettings.ENABLE_INNER_SHORTCUT ? handleInstallShortcutIntent(intent) : null;
 
@@ -1609,7 +1595,6 @@ class MethodProxies {
         }
     }
 
-
     static class GetActivityClassForToken extends MethodProxy {
 
         @Override
@@ -1619,7 +1604,7 @@ class MethodProxies {
 
         @Override
         public Object call(Object who, Method method, Object... args) throws Throwable {
-            IBinder token = (IBinder) args[0];
+            IBinder token = (IBinder)args[0];
             return VActivityManager.get().getActivityForToken(token);
         }
 
@@ -1628,7 +1613,6 @@ class MethodProxies {
             return isAppProcess();
         }
     }
-
 
     static class CheckGrantUriPermission extends MethodProxy {
 
@@ -1649,7 +1633,6 @@ class MethodProxies {
         }
     }
 
-
     static class ServiceDoneExecuting extends MethodProxy {
 
         @Override
@@ -1659,13 +1642,13 @@ class MethodProxies {
 
         @Override
         public Object call(Object who, Method method, Object... args) throws Throwable {
-            IBinder token = (IBinder) args[0];
+            IBinder token = (IBinder)args[0];
             if (!VActivityManager.get().isVAServiceToken(token)) {
                 return method.invoke(who, args);
             }
-            int type = (int) args[1];
-            int startId = (int) args[2];
-            int res = (int) args[3];
+            int type = (int)args[1];
+            int startId = (int)args[2];
+            int res = (int)args[3];
             VActivityManager.get().serviceDoneExecuting(token, type, startId, res);
             return 0;
         }
