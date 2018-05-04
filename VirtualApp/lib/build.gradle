@@ -40,6 +40,9 @@ android {
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     //    compile 'net.lingala.zip4j:zip4j:1.3.2'
-    compile 'io.paperdb:paperdb:2.0'
+    compile 'io.paperdb:paperdb:2.6'
     compile 'org.immutables:gson:2.4.2'
+//    compile project(':legend')
+//    compile project(path: ':legend')
+    compile 'me.weishu:epic:0.3.6'
 }

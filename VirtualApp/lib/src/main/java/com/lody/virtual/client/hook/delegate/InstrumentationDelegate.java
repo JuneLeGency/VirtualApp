@@ -1,8 +1,5 @@
 package com.lody.virtual.client.hook.delegate;
 
-import java.io.File;
-import java.io.FileOutputStream;
-
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.Application;
@@ -17,18 +14,10 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.PersistableBundle;
-import android.util.DebugUtils;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import com.lody.virtual.dexdump.DumpUtils;
 import com.lody.virtual.dexdump.ProxyClassLoader;
-import mirror.android.dex.DexM;
-import mirror.java.lang.ClassM;
-import mirror.java.lang.DexCacheM;
-
-import static com.lody.virtual.DelegateApplication64Bit.findField;
-import static com.lody.virtual.client.hook.proxies.am.MethodProxies.StartActivity.classToS;
 
 /**
  * @author Lody
@@ -226,14 +215,12 @@ public class InstrumentationDelegate extends Instrumentation {
         base.sendTrackballEventSync(event);
     }
 
-
-
     @Override
     public Application newApplication(ClassLoader cl, String className, Context context)
         throws InstantiationException, IllegalAccessException, ClassNotFoundException {
         Application app = base.newApplication(new ProxyClassLoader(cl), className, context);
         Class<? extends Application> c = app.getClass();
-        DumpUtils.dump(c,app.getPackageName());
+        DumpUtils.dump(app);
         return app;
     }
 

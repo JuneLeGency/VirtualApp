@@ -1,5 +1,5 @@
 #
-# ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./android.mk APP_ABI=armeabi(armeabi-v7a/arm64-v8a)
+# ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./android.mk APP_ABI=armeabi(armeabi/armeabi-v7a/arm64-v8a)
 #
 
 LOCAL_PATH := $(call my-dir)

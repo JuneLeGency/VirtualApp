@@ -87,4 +87,8 @@ public class RefMethod<T> {
     public Class<?>[] paramList() {
         return method.getParameterTypes();
     }
+
+    public Method getMethod() {
+        return method;
+    }
 }

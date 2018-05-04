@@ -184,8 +184,8 @@ public class MethodInvocationStub<T> {
                 if (NEED_PRINT_LOG) {
                     String caller = getBaseInterface().getClass().getCanonicalName();
                     if (!caller.contains("ibcore.io.Posix")) {
-                        Log.d("callerDebug",
-                            getBaseInterface().getClass().getCanonicalName() + "#" + method.getName());
+                        //Log.d("callerDebug",
+                        //    getBaseInterface().getClass().getCanonicalName() + "#" + method.getName());
                     }
                 }
                 if (useProxy && methodProxy.beforeCall(mBaseInterface, method, args)) {

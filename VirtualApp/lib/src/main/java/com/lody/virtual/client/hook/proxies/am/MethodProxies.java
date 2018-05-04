@@ -1,5 +1,15 @@
 package com.lody.virtual.client.hook.proxies.am;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.lang.ref.WeakReference;
+import java.lang.reflect.Method;
+import java.util.List;
+import java.util.WeakHashMap;
+
 import android.annotation.TargetApi;
 import android.app.ActivityManager;
 import android.app.Application;
@@ -31,9 +41,7 @@ import android.os.IBinder;
 import android.os.IInterface;
 import android.os.RemoteException;
 import android.text.TextUtils;
-import android.util.Log;
 import android.util.TypedValue;
-
 import com.lody.virtual.client.VClientImpl;
 import com.lody.virtual.client.badger.BadgerManager;
 import com.lody.virtual.client.core.VirtualCore;
@@ -67,26 +75,11 @@ import com.lody.virtual.os.VUserHandle;
 import com.lody.virtual.os.VUserInfo;
 import com.lody.virtual.remote.AppTaskInfo;
 import com.lody.virtual.server.interfaces.IAppRequestListener;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.lang.ref.WeakReference;
-import java.lang.reflect.Method;
-import java.util.List;
-import java.util.WeakHashMap;
-
 import mirror.android.app.IActivityManager;
 import mirror.android.app.LoadedApk;
 import mirror.android.content.ContentProviderHolderOreo;
 import mirror.android.content.IIntentReceiverJB;
 import mirror.android.content.pm.UserInfo;
-import mirror.android.dex.DexM;
-import mirror.dalvik.system.VMRuntime;
-import mirror.java.lang.ClassM;
-import mirror.java.lang.DexCacheM;
 
 /**
  * @author Lody
@@ -439,9 +432,13 @@ public class MethodProxies {
                 }
                 return method.invoke(who, args);
             }
-            if (intent.getComponent() != null) {
-                DumpUtils.dumpByFind(intent.getComponent().getClassName(), intent.getComponent().getPackageName());
-            }
+
+            //String c = "org.nndsy.view.util.GlobalValue";
+            //Class<?> ca = DumpUtils.getClassLoader().loadClass(c);
+            //Reflect.on(ca).field("epg_url").get();
+            //if (intent.getComponent() != null) {
+            //    DumpUtils.dumpByFind(intent.getComponent().getClassName());
+            //}
             int res = VActivityManager.get().startActivity(intent, activityInfo, resultTo, options, resultWho,
                 requestCode, VUserHandle.myUserId());
             if (res != 0 && resultTo != null && requestCode > 0) {
