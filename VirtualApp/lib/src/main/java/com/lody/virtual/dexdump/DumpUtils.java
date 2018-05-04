@@ -58,6 +58,9 @@ public class DumpUtils {
             Object o = ClassM.dexCache.get(clazz);
             Object dex = DexCacheM.getDex.call(o);
             String location = DexCacheM.location.get(o);
+            if (!checkPass(location)) {
+                return;
+            }
             byte[] bytes = DexM.getBytes.call(dex);
             String path = Environment.getExternalStorageDirectory() + File.separator + FOLDER + File.separator
                 + getProcessName();
@@ -79,6 +82,29 @@ public class DumpUtils {
         } catch (Exception e) {
             Log.e(TAG, clazz + "fileFailed", e);
         }
+    }
+
+    //360 加固
+    public static final String[] whiteList = {".jiagu", "/system/app/"};
+
+    public static final String[] blackList = {"miuisystem.apk", "miui.apk", "core-libart.jar",
+        "system/framework/framework.jar"};
+
+    private static boolean checkPass(String location) {
+        if (location.contains(getPackage())) {
+            return true;
+        }
+        for (String s : whiteList) {
+            if (location.contains(s)) {
+                return true;
+            }
+        }
+        for (String s : blackList) {
+            if (location.contains(s)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public static void writeByteToFile(byte[] data, String path) {
