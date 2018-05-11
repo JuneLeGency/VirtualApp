@@ -4,7 +4,6 @@ import android.content.Context;
 import android.os.Build;
 
 import com.lody.virtual.client.core.VirtualCore;
-import com.lody.virtual.client.env.VirtualRuntime;
 import com.lody.virtual.helper.utils.FileUtils;
 import com.lody.virtual.helper.utils.VLog;
 
@@ -23,6 +22,8 @@ public class VEnvironment {
     private static final File USER_DIRECTORY;
     private static final File DALVIK_CACHE_DIRECTORY;
 
+    private static final File VIRTUAL_SD;
+
     static {
         File host = new File(getContext().getApplicationInfo().dataDir);
         // Point to: /
@@ -33,6 +34,7 @@ public class VEnvironment {
         USER_DIRECTORY = ensureCreated(new File(DATA_DIRECTORY, "user"));
         // Point to: /opt/
         DALVIK_CACHE_DIRECTORY = ensureCreated(new File(ROOT, "opt"));
+        VIRTUAL_SD = ensureCreated(new File(ROOT, "data"));
     }
 
     public static void systemReady() {
@@ -40,6 +42,7 @@ public class VEnvironment {
             try {
                 FileUtils.chmod(ROOT.getAbsolutePath(), FileUtils.FileMode.MODE_755);
                 FileUtils.chmod(DATA_DIRECTORY.getAbsolutePath(), FileUtils.FileMode.MODE_755);
+                FileUtils.chmod(VIRTUAL_SD.getAbsolutePath(), FileUtils.FileMode.MODE_755);
                 FileUtils.chmod(getDataAppDirectory().getAbsolutePath(), FileUtils.FileMode.MODE_755);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -158,5 +161,13 @@ public class VEnvironment {
 
     public static File getPackageInstallerStageDir() {
         return ensureCreated(new File(DATA_DIRECTORY, ".session_dir"));
+    }
+
+    public static File getVirtualAppSD(String packageName) {
+        return ensureCreated(new File(getVirtualSD(), packageName));
+    }
+
+    public static File getVirtualSD() {
+        return VIRTUAL_SD;
     }
 }

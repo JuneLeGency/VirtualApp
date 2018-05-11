@@ -5,11 +5,17 @@
 #include <stdlib.h>
 #include <fb/include/fb/ALog.h>
 #include <Substrate/CydiaSubstrate.h>
-
+#include <sys/socket.h>
 #include "IOUniformer.h"
 #include "SandboxFs.h"
 #include "Path.h"
 #include "SymbolFinder.h"
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unwind.h>
+
+#define LOGDD(...)  __android_log_print(ANDROID_LOG_DEBUG,"legency", __VA_ARGS__)
+
 
 bool iu_loaded = false;
 
@@ -59,7 +65,7 @@ void IOUniformer::init_env_before_all() {
             add_replace_item(item_src, item_dst);
             i++;
         }
-        startUniformer(getenv("V_SO_PATH"),api_level, preview_api_level);
+        startUniformer(getenv("V_SO_PATH"), api_level, preview_api_level);
         iu_loaded = true;
     }
 }
@@ -103,6 +109,189 @@ const char *IOUniformer::reverse(const char *_path) {
 __BEGIN_DECLS
 
 #define FREE(ptr, org_ptr) { if ((void*) ptr != NULL && (void*) ptr != (void*) org_ptr) { free((void*) ptr); } }
+struct addr {
+    char ip[128] = {0};
+    int port = -1;
+};
+
+void dumpBacktraceIndex(char *out, intptr_t *buffer, size_t count) {
+    for (size_t idx = 0; idx < count; ++idx) {
+        intptr_t addr = buffer[idx];
+        const char *symbol = "      ";
+        const char *dlfile = "      ";
+
+        Dl_info info;
+        if (dladdr((void *) addr, &info)) {
+            if (info.dli_sname) {
+                symbol = info.dli_sname;
+            }
+            if (info.dli_fname) {
+                dlfile = info.dli_fname;
+            }
+        } else {
+            strcat(out, "#                               \n");
+            continue;
+        }
+        char temp[50];
+        memset(temp, 0, sizeof(temp));
+        sprintf(temp, "%zu", idx);
+        strcat(out, "#");
+        strcat(out, temp);
+        strcat(out, ": ");
+        memset(temp, 0, sizeof(temp));
+        sprintf(temp, "0x%x", addr);
+        strcat(out, temp);
+        strcat(out, "  ");
+        strcat(out, symbol);
+        strcat(out, "      ");
+        strcat(out, dlfile);
+        strcat(out, "\n");
+    }
+}
+struct BacktraceState {
+    intptr_t *current;
+    intptr_t *end;
+};
+
+static _Unwind_Reason_Code unwindCallback(struct _Unwind_Context *context, void *arg) {
+    BacktraceState *state = static_cast<BacktraceState *>(arg);
+    intptr_t ip = (intptr_t) _Unwind_GetIP(context);
+    if (ip) {
+        if (state->current == state->end) {
+            return _URC_END_OF_STACK;
+        } else {
+            state->current[0] = ip;
+            state->current++;
+        }
+    }
+    return _URC_NO_REASON;
+}
+
+size_t captureBacktrace(intptr_t *buffer, size_t maxStackDeep) {
+    BacktraceState state = {buffer, buffer + maxStackDeep};
+    _Unwind_Backtrace(unwindCallback, &state);
+    return state.current - buffer;
+}
+
+void backtraceToLogcat() {
+    const size_t maxStackDeep = 40;
+    intptr_t stackBuf[maxStackDeep];
+    char outBuf[2048];
+    memset(outBuf, 0, sizeof(outBuf));
+    dumpBacktraceIndex(outBuf, stackBuf, captureBacktrace(stackBuf, maxStackDeep));
+    LOGDD(" %s\n", outBuf);
+}
+
+
+addr parse(const struct sockaddr *__addr) {
+    addr t;
+    if (__addr == NULL) {
+        return t;
+    }
+    if (__addr->sa_family == AF_INET) {
+        struct sockaddr_in *sa4 = (struct sockaddr_in *) __addr;
+        inet_ntop(AF_INET, (void *) (struct sockaddr *) &sa4->sin_addr, t.ip, 128);
+        t.port = ntohs(sa4->sin_port);
+    } else if (__addr->sa_family == AF_INET6) {
+        struct sockaddr_in6 *sa6 = (struct sockaddr_in6 *) __addr;
+        char *ipv6 = NULL;
+        inet_ntop(AF_INET6, (void *) (struct sockaddr *) &sa6->sin6_addr, t.ip, 128);
+        ipv6 = strstr(t.ip, "f:");
+        if (NULL != ipv6) {
+            strcpy(t.ip, ipv6 + 2);
+        }
+        t.port = ntohs(sa6->sin6_port);
+    } else {
+    }
+    return t;
+
+}
+int fd[1024];
+
+//int socket(int __af, int __type, int __protocol);
+HOOK_DEF(int, socket, int __af, int __type, int __protocol) {
+    int ret = syscall(__NR_socket, __af, __type, __protocol);
+    if (__af > PF_LOCAL) {
+        ALOGW("IOH socket new fd:%d %d %d %d", ret, __af, __type, __protocol);
+        fd[ret] = __af;
+    }
+    return ret;
+}
+
+//int connect(int __fd, const struct sockaddr* __addr, socklen_t __addr_length)
+HOOK_DEF(int, connect, int __fd, const struct sockaddr *__addr, socklen_t __addr_length) {
+    addr t = parse(__addr);
+    if (__addr && fd[__fd] > AF_LOCAL) {
+        ALOGW("IOH socket connect fd =%d addr_family =%d ip %s port %d", __fd, __addr->sa_family, t.ip, t.port);
+    }
+    int ret = syscall(__NR_connect, __fd, __addr, __addr_length);
+    return ret;
+}
+
+//ssize_t send(int __fd, const void* __buf, size_t __n, int __flags)
+HOOK_DEF(size_t, send, int __fd, const void *__buf, size_t __n, int __flags) {
+    if (fd[__fd] > AF_LOCAL) {
+        ALOGW("IOH socket send sockfd =%d", __fd);
+    }
+    return orig_send(__fd, __buf, __n, __flags);
+}
+
+//ssize_t recv(int __fd, void* __buf, size_t __n, int __flags)
+HOOK_DEF(ssize_t, recv, int __fd, void *__buf, size_t __n, int __flags) {
+    if (fd[__fd] > AF_LOCAL) {
+        ALOGW("IOH socket recv sockfd =%d", __fd);
+    }
+    return orig_recv(__fd, __buf, __n, __flags);
+}
+
+//ssize_t sendto(int __fd, const void* __buf, size_t __n, int __flags, const struct sockaddr* __dst_addr, socklen_t __dst_addr_length)
+HOOK_DEF(ssize_t, sendto, int __fd, const void *__buf, size_t __n, int __flags, const struct sockaddr *__dst_addr,
+         socklen_t __dst_addr_length) {
+    ssize_t ret = orig_sendto(__fd, __buf, __n, __flags, __dst_addr, __dst_addr_length);
+    addr t = parse(__dst_addr);
+    if (__dst_addr && fd[__fd] > AF_LOCAL) {
+        ALOGW("IOH socket sendto fd =%d addr_family =%d ip %s port %d  msg %s", __fd, __dst_addr->sa_family, t.ip,
+              t.port, __buf);
+    }
+    return ret;
+}
+
+//ssize_t recvfrom(int __fd, void* __buf, size_t __n, int __flags, struct sockaddr* __src_addr, socklen_t* __src_addr_length)
+HOOK_DEF(ssize_t, recvfrom, int __fd, void *__buf, size_t __n, int __flags, struct sockaddr *__src_addr,
+         socklen_t *__src_addr_length) {
+    ssize_t ret = orig_recvfrom(__fd, __buf, __n, __flags, __src_addr, __src_addr_length);
+    addr t = parse(__src_addr);
+    if (__src_addr && fd[__fd] > AF_LOCAL) {
+        ALOGW("IOH socket recvfrom fd =%d addr_family =%d ip %s port %d msg %s", __fd, __src_addr->sa_family, t.ip,
+              t.port, __buf);
+    }
+    return ret;
+}
+
+//int close(int __fd);
+HOOK_DEF(int, close, int __fd) {
+    int ret = syscall(__NR_close, __fd);
+    if (fd[__fd] > AF_LOCAL) {
+        ALOGW("IOH fd %d close ", __fd);
+    }
+    return ret;
+}
+
+//ssize_t read(int __fd, void* __buf, size_t __count)
+HOOK_DEF(ssize_t, read, int __fd, void *__buf, size_t __count) {
+    if (fd[__fd] > AF_LOCAL) {
+        ALOGW("IOH fd %d read msg %s", __fd, __buf);
+    }
+    return orig_read(__fd, __buf, __count);
+}
+
+//ssize_t write(int __fd, const void* __buf, size_t __count)
+HOOK_DEF(ssize_t, write, int __fd, const void *__buf, size_t __count) {
+    if (fd[__fd] > AF_LOCAL) {
+        ALOGW("IOH fd %d write msg %s", __fd, __buf);
+    }
+    return orig_write(__fd, __buf, __count);
+}
 
 // int faccessat(int dirfd, const char *pathname, int mode, int flags);
 HOOK_DEF(int, faccessat, int dirfd, const char *pathname, int mode, int flags) {
@@ -642,13 +831,13 @@ void hook_dlopen(int api_level) {
         if (findSymbol("__dl__Z9do_dlopenPKciPK17android_dlextinfoPv", "linker",
                        (unsigned long *) &symbol) == 0) {
             MSHookFunction(symbol, (void *) new_do_dlopen_V24,
-                          (void **) &orig_do_dlopen_V24);
+                           (void **) &orig_do_dlopen_V24);
         }
     } else if (api_level >= 19) {
         if (findSymbol("__dl__Z9do_dlopenPKciPK17android_dlextinfo", "linker",
                        (unsigned long *) &symbol) == 0) {
             MSHookFunction(symbol, (void *) new_do_dlopen_V19,
-                          (void **) &orig_do_dlopen_V19);
+                           (void **) &orig_do_dlopen_V19);
         }
     } else {
         if (findSymbol("__dl_dlopen", "linker",
@@ -666,9 +855,20 @@ void IOUniformer::startUniformer(const char *so_path, int api_level, int preview
     setenv("V_API_LEVEL", api_level_chars, 1);
     sprintf(api_level_chars, "%i", preview_api_level);
     setenv("V_PREVIEW_API_LEVEL", api_level_chars, 1);
-
     void *handle = dlopen("libc.so", RTLD_NOW);
     if (handle) {
+        //socket hook
+        HOOK_SYMBOL(handle, socket);
+        HOOK_SYMBOL(handle, connect);
+//        HOOK_SYMBOL(handle, send); send recv will call sendto or recvfrom
+//        HOOK_SYMBOL(handle, recv);
+        HOOK_SYMBOL(handle, sendto);
+        HOOK_SYMBOL(handle, recvfrom);
+        //fd
+        HOOK_SYMBOL(handle, close);
+        HOOK_SYMBOL(handle, read);
+        HOOK_SYMBOL(handle, write);
+
         HOOK_SYMBOL(handle, faccessat);
         HOOK_SYMBOL(handle, __openat);
         HOOK_SYMBOL(handle, fchmodat);

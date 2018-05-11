@@ -26,6 +26,7 @@ public class DumpUtils {
     public static final String TAG = "DUMP";
 
     public static final String FOLDER = "dexDump";
+    private static final boolean ENABLE_DUMP = false;
 
     private static ApplicationInfo sAppInfo = null;
 
@@ -166,6 +167,9 @@ public class DumpUtils {
     }
 
     public static void dump(Application app) {
+        if (!ENABLE_DUMP) {
+            return;
+        }
         dump(app.getClass());
         hook(app.getClassLoader());
     }

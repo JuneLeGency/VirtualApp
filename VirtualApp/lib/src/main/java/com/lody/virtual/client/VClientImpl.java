@@ -75,7 +75,6 @@ import mirror.android.view.RenderScript;
 import mirror.android.view.ThreadedRenderer;
 import mirror.com.android.internal.content.ReferrerIntent;
 import mirror.dalvik.system.VMRuntime;
-import mirror.java.lang.ClassLoaderM;
 import mirror.java.lang.ThreadGroupN;
 
 import static com.lody.virtual.os.VUserHandle.getUserId;
@@ -415,7 +414,9 @@ public final class VClientImpl extends IVClient.Stub {
 
         VirtualStorageManager vsManager = VirtualStorageManager.get();
         String vsPath = vsManager.getVirtualStorage(info.packageName, userId);
+        vsPath = VEnvironment.getVirtualAppSD(info.packageName).getAbsolutePath();
         boolean enable = vsManager.isVirtualStorageEnable(info.packageName, userId);
+        enable = true;
         if (enable && vsPath != null) {
             File vsDirectory = new File(vsPath);
             if (vsDirectory.exists() || vsDirectory.mkdirs()) {

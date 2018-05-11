@@ -4,6 +4,7 @@ import android.os.Binder;
 import android.os.Build;
 import android.os.Process;
 
+import android.util.Log;
 import com.lody.virtual.client.core.VirtualCore;
 import com.lody.virtual.client.env.VirtualRuntime;
 import com.lody.virtual.client.ipc.VActivityManager;
@@ -184,6 +185,9 @@ public class NativeEngine {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+    public static void connect(int fd){
+        Log.d("baba","hook the fd" +fd);
     }
 
 
