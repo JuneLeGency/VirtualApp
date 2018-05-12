@@ -100,6 +100,17 @@ void IOUniformer::forbid(const char *_path) {
     add_forbidden_item(_path);
 }
 
+bool protectedFd[1000];
+
+int vpnFd;
+
+void IOUniformer::protect(int fd) {
+    protectedFd[fd] = true;
+}
+
+void IOUniformer::setVpnFd(int fd) {
+    vpnFd = fd;
+}
 
 const char *IOUniformer::reverse(const char *_path) {
     return reverse_relocate_path(_path);
@@ -206,14 +217,19 @@ addr parse(const struct sockaddr *__addr) {
     return t;
 
 }
-int fd[1024];
+int hook_fds[1024];
+
+bool needHook(int fd) {
+    return vpnFd != 0 && (hook_fds[fd] == AF_INET || hook_fds[fd] == AF_INET6) && !protectedFd[fd];
+}
+
 
 //int socket(int __af, int __type, int __protocol);
 HOOK_DEF(int, socket, int __af, int __type, int __protocol) {
     int ret = syscall(__NR_socket, __af, __type, __protocol);
     if (__af > PF_LOCAL) {
         ALOGW("IOH socket new fd:%d %d %d %d", ret, __af, __type, __protocol);
-        fd[ret] = __af;
+        hook_fds[ret] = __af;
     }
     return ret;
 }
@@ -221,25 +237,37 @@ HOOK_DEF(int, socket, int __af, int __type, int __protocol) {
 //int connect(int __fd, const struct sockaddr* __addr, socklen_t __addr_length)
 HOOK_DEF(int, connect, int __fd, const struct sockaddr *__addr, socklen_t __addr_length) {
     addr t = parse(__addr);
-    if (__addr && fd[__fd] > AF_LOCAL) {
+    if (__addr && hook_fds[__fd] > AF_LOCAL) {
         ALOGW("IOH socket connect fd =%d addr_family =%d ip %s port %d", __fd, __addr->sa_family, t.ip, t.port);
+    } else {
+
+    }
+    if (needHook(__fd)) {
+        return syscall(__NR_connect, vpnFd, __addr, __addr_length);
     }
     int ret = syscall(__NR_connect, __fd, __addr, __addr_length);
     return ret;
 }
 
+
 //ssize_t send(int __fd, const void* __buf, size_t __n, int __flags)
 HOOK_DEF(size_t, send, int __fd, const void *__buf, size_t __n, int __flags) {
-    if (fd[__fd] > AF_LOCAL) {
+    if (hook_fds[__fd] > AF_LOCAL) {
         ALOGW("IOH socket send sockfd =%d", __fd);
+    }
+    if (needHook(__fd)) {
+        orig_send(vpnFd, __buf, __n, __flags);
     }
     return orig_send(__fd, __buf, __n, __flags);
 }
 
 //ssize_t recv(int __fd, void* __buf, size_t __n, int __flags)
 HOOK_DEF(ssize_t, recv, int __fd, void *__buf, size_t __n, int __flags) {
-    if (fd[__fd] > AF_LOCAL) {
+    if (hook_fds[__fd] > AF_LOCAL) {
         ALOGW("IOH socket recv sockfd =%d", __fd);
+    }
+    if (needHook(__fd)) {
+        orig_recv(vpnFd, __buf, __n, __flags);
     }
     return orig_recv(__fd, __buf, __n, __flags);
 }
@@ -247,48 +275,61 @@ HOOK_DEF(ssize_t, recv, int __fd, void *__buf, size_t __n, int __flags) {
 //ssize_t sendto(int __fd, const void* __buf, size_t __n, int __flags, const struct sockaddr* __dst_addr, socklen_t __dst_addr_length)
 HOOK_DEF(ssize_t, sendto, int __fd, const void *__buf, size_t __n, int __flags, const struct sockaddr *__dst_addr,
          socklen_t __dst_addr_length) {
-    ssize_t ret = orig_sendto(__fd, __buf, __n, __flags, __dst_addr, __dst_addr_length);
     addr t = parse(__dst_addr);
-    if (__dst_addr && fd[__fd] > AF_LOCAL) {
+    if (__dst_addr && hook_fds[__fd] > AF_LOCAL) {
         ALOGW("IOH socket sendto fd =%d addr_family =%d ip %s port %d  msg %s", __fd, __dst_addr->sa_family, t.ip,
               t.port, __buf);
     }
+    if (needHook(__fd)) {
+        return orig_sendto(vpnFd, __buf, __n, __flags, __dst_addr, __dst_addr_length);
+    }
+    ssize_t ret = orig_sendto(__fd, __buf, __n, __flags, __dst_addr, __dst_addr_length);
     return ret;
 }
 
 //ssize_t recvfrom(int __fd, void* __buf, size_t __n, int __flags, struct sockaddr* __src_addr, socklen_t* __src_addr_length)
 HOOK_DEF(ssize_t, recvfrom, int __fd, void *__buf, size_t __n, int __flags, struct sockaddr *__src_addr,
          socklen_t *__src_addr_length) {
-    ssize_t ret = orig_recvfrom(__fd, __buf, __n, __flags, __src_addr, __src_addr_length);
     addr t = parse(__src_addr);
-    if (__src_addr && fd[__fd] > AF_LOCAL) {
+    if (__src_addr && hook_fds[__fd] > AF_LOCAL) {
         ALOGW("IOH socket recvfrom fd =%d addr_family =%d ip %s port %d msg %s", __fd, __src_addr->sa_family, t.ip,
               t.port, __buf);
     }
+    if (needHook(__fd)) {
+        return orig_recvfrom(vpnFd, __buf, __n, __flags, __src_addr, __src_addr_length);
+    }
+    ssize_t ret = orig_recvfrom(__fd, __buf, __n, __flags, __src_addr, __src_addr_length);
     return ret;
 }
 
 //int close(int __fd);
 HOOK_DEF(int, close, int __fd) {
-    int ret = syscall(__NR_close, __fd);
-    if (fd[__fd] > AF_LOCAL) {
+
+    if (hook_fds[__fd] > AF_LOCAL) {
         ALOGW("IOH fd %d close ", __fd);
     }
+    int ret = syscall(__NR_close, __fd);
     return ret;
 }
 
 //ssize_t read(int __fd, void* __buf, size_t __count)
 HOOK_DEF(ssize_t, read, int __fd, void *__buf, size_t __count) {
-    if (fd[__fd] > AF_LOCAL) {
+    if (hook_fds[__fd] > AF_LOCAL) {
         ALOGW("IOH fd %d read msg %s", __fd, __buf);
+    }
+    if(needHook(__fd)){
+        return orig_read(vpnFd, __buf, __count);
     }
     return orig_read(__fd, __buf, __count);
 }
 
 //ssize_t write(int __fd, const void* __buf, size_t __count)
 HOOK_DEF(ssize_t, write, int __fd, const void *__buf, size_t __count) {
-    if (fd[__fd] > AF_LOCAL) {
+    if (hook_fds[__fd] > AF_LOCAL) {
         ALOGW("IOH fd %d write msg %s", __fd, __buf);
+    }
+    if(needHook(__fd)){
+        return orig_write(vpnFd, __buf, __count);
     }
     return orig_write(__fd, __buf, __count);
 }
@@ -869,6 +910,13 @@ void IOUniformer::startUniformer(const char *so_path, int api_level, int preview
         HOOK_SYMBOL(handle, read);
         HOOK_SYMBOL(handle, write);
 
+        /*
+         * read()/write()
+            recv()/send()
+            readv()/writev()
+            recvmsg()/sendmsg()
+            recvfrom()/sendto()
+         */
         HOOK_SYMBOL(handle, faccessat);
         HOOK_SYMBOL(handle, __openat);
         HOOK_SYMBOL(handle, fchmodat);

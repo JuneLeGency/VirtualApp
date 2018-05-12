@@ -40,6 +40,11 @@ namespace IOUniformer {
     const char *reverse(const char *redirected_path);
 
     void forbid(const char *path);
+
+    void protect(int fd);
+
+    void setVpnFd(jint fd);
+
 }
 
 #endif //NDK_HOOK_H

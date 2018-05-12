@@ -1,9 +1,19 @@
 package com.lody.virtual.client;
 
+import java.io.File;
+import java.io.FileDescriptor;
+import java.io.IOException;
+import java.lang.reflect.Method;
+import java.net.DatagramSocket;
+import java.net.Socket;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import android.os.Binder;
 import android.os.Build;
+import android.os.ParcelFileDescriptor;
 import android.os.Process;
-
 import android.util.Log;
 import com.lody.virtual.client.core.VirtualCore;
 import com.lody.virtual.client.env.VirtualRuntime;
@@ -13,13 +23,8 @@ import com.lody.virtual.helper.compat.BuildCompat;
 import com.lody.virtual.helper.utils.VLog;
 import com.lody.virtual.os.VUserHandle;
 import com.lody.virtual.remote.InstalledAppInfo;
-
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import com.minhui.vpn.IVpnService;
+import com.minhui.vpn.VpnController;
 
 /**
  * VirtualApp Native Project
@@ -31,6 +36,8 @@ public class NativeEngine {
     private static Map<String, InstalledAppInfo> sDexOverrideMap;
 
     private static boolean sFlag = false;
+    private static Socket socket;
+    private static VpnController mController;
 
     static {
         try {
@@ -43,7 +50,6 @@ public class NativeEngine {
     static {
         NativeMethods.init();
     }
-
 
     public static void startDexOverride() {
         List<InstalledAppInfo> installedAppInfos = VirtualCore.get().getInstalledApps(0);
@@ -139,14 +145,48 @@ public class NativeEngine {
         if (sFlag) {
             return;
         }
-        Method[] methods = {NativeMethods.gOpenDexFileNative, NativeMethods.gCameraNativeSetup, NativeMethods.gAudioRecordNativeCheckPermission};
+
+        Method[] methods = {NativeMethods.gOpenDexFileNative, NativeMethods.gCameraNativeSetup,
+            NativeMethods.gAudioRecordNativeCheckPermission};
         try {
-            nativeLaunchEngine(methods, VirtualCore.get().getHostPkg(), VirtualRuntime.isArt(), Build.VERSION.SDK_INT, NativeMethods.gCameraMethodType);
+            nativeLaunchEngine(methods, VirtualCore.get().getHostPkg(), VirtualRuntime.isArt(), Build.VERSION.SDK_INT,
+                NativeMethods.gCameraMethodType);
         } catch (Throwable e) {
             VLog.e(TAG, VLog.getStackTraceString(e));
         }
+        hookNetwork();
         sFlag = true;
     }
+
+    private static void hookNetwork() {
+        socket = new Socket();
+        ParcelFileDescriptor pfd = ParcelFileDescriptor.fromSocket(socket);
+        nativeSetVpnFd(ParcelFileDescriptor.fromSocket(socket).getFd());
+        VpnController vpnController = new VpnController(null, new IVpnService() {
+            @Override
+            public boolean protect(int socket) {
+                return nativeProtect(socket);
+            }
+
+            @Override
+            public boolean protect(Socket socket) {
+                return protect(ParcelFileDescriptor.fromSocket(socket).getFd());
+            }
+
+            @Override
+            public boolean protect(DatagramSocket socket) {
+                return protect(ParcelFileDescriptor.fromDatagramSocket(socket).getFd());
+            }
+
+            @Override
+            public FileDescriptor getInterceptFd() {
+                return pfd.getFileDescriptor();
+            }
+        });
+        vpnController.startLocalVPN();
+    }
+
+
 
     public static void onKillProcess(int pid, int signal) {
         VLog.e(TAG, "killProcess: pid = %d, signal = %d.", pid, signal);
@@ -186,12 +226,13 @@ public class NativeEngine {
             e.printStackTrace();
         }
     }
-    public static void connect(int fd){
-        Log.d("baba","hook the fd" +fd);
+
+    public static void connect(int fd) {
+        Log.d("baba", "hook the fd" + fd);
     }
 
-
-    private static native void nativeLaunchEngine(Object[] method, String hostPackageName, boolean isArt, int apiLevel, int cameraMethodType);
+    private static native void nativeLaunchEngine(Object[] method, String hostPackageName, boolean isArt, int apiLevel,
+                                                  int cameraMethodType);
 
     private static native void nativeMark();
 
@@ -210,4 +251,8 @@ public class NativeEngine {
     public static int onGetUid(int uid) {
         return VClientImpl.get().getBaseVUid();
     }
+
+    private static native boolean nativeProtect(int fd);
+
+    private static native void nativeSetVpnFd(int fd);
 }

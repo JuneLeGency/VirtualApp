@@ -1,4 +1,4 @@
-#include <elf.h>//
+
 // VirtualApp Native Project
 //
 #include <Foundation/IOUniformer.h>
@@ -55,6 +55,15 @@ static jstring jni_nativeReverseRedirectedPath(alias_ref<jclass> jclazz, jstring
     return Environment::current()->NewStringUTF(orig_path);
 }
 
+static jboolean jni_nativeProtect(alias_ref<jclass> clazz, jint fd) {
+    IOUniformer::protect(fd);
+    return static_cast<jboolean>(true);
+}
+
+static void jni_nativeSetVpnFd(alias_ref<jclass> clazz, jint fd) {
+    IOUniformer::setVpnFd(fd);
+}
+
 
 alias_ref<jclass> nativeEngineClass;
 
@@ -63,21 +72,25 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *) {
     return initialize(vm, [] {
         nativeEngineClass = findClassStatic("com/lody/virtual/client/NativeEngine");
         nativeEngineClass->registerNatives({
-                        makeNativeMethod("nativeEnableIORedirect",
-                                         jni_nativeEnableIORedirect),
-                        makeNativeMethod("nativeIOWhitelist",
-                                         jni_nativeIOWhitelist),
-                        makeNativeMethod("nativeIOForbid",
-                                         jni_nativeIOForbid),
-                        makeNativeMethod("nativeIORedirect",
-                                         jni_nativeIORedirect),
-                        makeNativeMethod("nativeGetRedirectedPath",
-                                         jni_nativeGetRedirectedPath),
-                        makeNativeMethod("nativeReverseRedirectedPath",
-                                         jni_nativeReverseRedirectedPath),
-                        makeNativeMethod("nativeLaunchEngine",
-                                         jni_nativeLaunchEngine),
-                }
+                                                   makeNativeMethod("nativeEnableIORedirect",
+                                                                    jni_nativeEnableIORedirect),
+                                                   makeNativeMethod("nativeIOWhitelist",
+                                                                    jni_nativeIOWhitelist),
+                                                   makeNativeMethod("nativeIOForbid",
+                                                                    jni_nativeIOForbid),
+                                                   makeNativeMethod("nativeIORedirect",
+                                                                    jni_nativeIORedirect),
+                                                   makeNativeMethod("nativeGetRedirectedPath",
+                                                                    jni_nativeGetRedirectedPath),
+                                                   makeNativeMethod("nativeReverseRedirectedPath",
+                                                                    jni_nativeReverseRedirectedPath),
+                                                   makeNativeMethod("nativeLaunchEngine",
+                                                                    jni_nativeLaunchEngine),
+                                                   makeNativeMethod("nativeProtect",
+                                                                    jni_nativeProtect),
+                                                   makeNativeMethod("nativeSetVpnFd",
+                                                                    jni_nativeSetVpnFd),
+                                           }
         );
     });
 }
