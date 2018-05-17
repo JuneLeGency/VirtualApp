@@ -6,6 +6,9 @@
 #include <fb/include/fb/ALog.h>
 #include <fb/include/fb/fbjni.h>
 #include "VAJni.h"
+//#include "ProxyChain/common.h"
+//extern "C"
+//#include "ProxyChain/libproxychains.h"
 
 using namespace facebook::jni;
 
@@ -62,6 +65,11 @@ static jboolean jni_nativeProtect(alias_ref<jclass> clazz, jint fd) {
 
 static void jni_nativeSetVpnFd(alias_ref<jclass> clazz, jint fd) {
     IOUniformer::setVpnFd(fd);
+//    setenv(PROXYCHAINS_CONF_FILE_ENV_VAR, "/sdcard/proxychains.conf", 1);
+//    init_lib_wrapper();
+}
+static void jni_nativeLogLevel(alias_ref<jclass> clazz, jint fd) {
+    IOUniformer::logLevel(fd);
 }
 
 
@@ -90,6 +98,8 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *) {
                                                                     jni_nativeProtect),
                                                    makeNativeMethod("nativeSetVpnFd",
                                                                     jni_nativeSetVpnFd),
+                                                   makeNativeMethod("nativeLogLevel",
+                                                                    jni_nativeLogLevel),
                                            }
         );
     });

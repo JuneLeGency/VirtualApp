@@ -56,7 +56,7 @@ extern "C" {
 extern "C" {
 #endif
 
-bool MSHookProcess(pid_t pid, const char *library);
+//bool MSHookProcess(pid_t pid, const char *library);
 
 typedef const void *MSImageRef;
 

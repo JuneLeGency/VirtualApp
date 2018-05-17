@@ -9,6 +9,7 @@ LOCAL_CFLAGS += -fno-rtti -fno-exceptions
 LOCAL_C_INCLUDES += $(MAIN_LOCAL_PATH)
 LOCAL_C_INCLUDES += $(MAIN_LOCAL_PATH)/Foundation
 LOCAL_C_INCLUDES += $(MAIN_LOCAL_PATH)/Jni
+#LOCAL_C_INCLUDES += $(MAIN_LOCAL_PATH)/ProxyChain
 
 LOCAL_SRC_FILES := Jni/VAJni.cpp \
 				   Foundation/IOUniformer.cpp \
@@ -20,6 +21,16 @@ LOCAL_SRC_FILES := Jni/VAJni.cpp \
                    Substrate/SubstrateDebug.cpp \
                    Substrate/SubstrateHook.cpp \
                    Substrate/SubstratePosixMemory.cpp \
+               #     ProxyChain/allocator_thread.c \
+               #     ProxyChain/common.c \
+               #     ProxyChain/core.c \
+               #     ProxyChain/debug.c \
+               #     ProxyChain/hash.c \
+               #     ProxyChain/hostsreader.c \
+               #     ProxyChain/ip_type.c \
+               #     ProxyChain/libproxychains.c \
+               #     ProxyChain/nameinfo.c \
+               #     ProxyChain/version.c
 
 LOCAL_LDLIBS := -llog -latomic
 LOCAL_STATIC_LIBRARIES := fb

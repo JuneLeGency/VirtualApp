@@ -32,6 +32,7 @@ import com.minhui.vpn.VpnController;
 public class NativeEngine {
 
     private static final String TAG = NativeEngine.class.getSimpleName();
+    private static final boolean HOOK_NET = false;
 
     private static Map<String, InstalledAppInfo> sDexOverrideMap;
 
@@ -159,34 +160,36 @@ public class NativeEngine {
     }
 
     private static void hookNetwork() {
+        if (!HOOK_NET) {
+            return;
+        }
+        nativeLogLevel(1);
         socket = new Socket();
-        ParcelFileDescriptor pfd = ParcelFileDescriptor.fromSocket(socket);
-        nativeSetVpnFd(ParcelFileDescriptor.fromSocket(socket).getFd());
-        VpnController vpnController = new VpnController(null, new IVpnService() {
-            @Override
-            public boolean protect(int socket) {
-                return nativeProtect(socket);
-            }
-
-            @Override
-            public boolean protect(Socket socket) {
-                return protect(ParcelFileDescriptor.fromSocket(socket).getFd());
-            }
-
-            @Override
-            public boolean protect(DatagramSocket socket) {
-                return protect(ParcelFileDescriptor.fromDatagramSocket(socket).getFd());
-            }
-
-            @Override
-            public FileDescriptor getInterceptFd() {
-                return pfd.getFileDescriptor();
-            }
-        });
-        vpnController.startLocalVPN();
+        //ParcelFileDescriptor pfd = ParcelFileDescriptor.fromSocket(socket);
+        //nativeSetVpnFd(ParcelFileDescriptor.fromSocket(socket).getFd());
+        //VpnController vpnController = new VpnController(null, new IVpnService() {
+        //    @Override
+        //    public boolean protect(int socket) {
+        //        return nativeProtect(socket);
+        //    }
+        //
+        //    @Override
+        //    public boolean protect(Socket socket) {
+        //        return protect(ParcelFileDescriptor.fromSocket(socket).getFd());
+        //    }
+        //
+        //    @Override
+        //    public boolean protect(DatagramSocket socket) {
+        //        return protect(ParcelFileDescriptor.fromDatagramSocket(socket).getFd());
+        //    }
+        //
+        //    @Override
+        //    public FileDescriptor getInterceptFd() {
+        //        return pfd.getFileDescriptor();
+        //    }
+        //});
+        //vpnController.startLocalVPN();
     }
-
-
 
     public static void onKillProcess(int pid, int signal) {
         VLog.e(TAG, "killProcess: pid = %d, signal = %d.", pid, signal);
@@ -255,4 +258,6 @@ public class NativeEngine {
     private static native boolean nativeProtect(int fd);
 
     private static native void nativeSetVpnFd(int fd);
+
+    private static native void nativeLogLevel(int level);
 }

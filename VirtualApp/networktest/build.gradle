@@ -3,8 +3,6 @@ apply plugin: 'com.android.application'
 android {
     compileSdkVersion 27
 
-
-
     defaultConfig {
         applicationId "legency.june.networktest"
         minSdkVersion 15

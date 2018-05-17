@@ -995,6 +995,12 @@
             android:process=":p49"
             android:taskAffinity="com.lody.virtual.vt"
             android:theme="@android:style/Theme.Dialog" />
+        <service android:name="com.lody.virtual.client.stub.StubVpnService"
+            android:permission="android.permission.BIND_VPN_SERVICE">
+            <intent-filter>
+                <action android:name="android.net.VpnService" />
+            </intent-filter>
+        </service>
 
         <provider
             android:name="com.lody.virtual.client.stub.StubContentProvider$C0"
