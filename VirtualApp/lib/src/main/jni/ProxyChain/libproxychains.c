@@ -45,10 +45,10 @@
 #define     SOCKPORT(x)     (satosin(x)->sin_port)
 #define     SOCKFAMILY(x)     (satosin(x)->sin_family)
 #define     MAX_CHAIN 512
-#define HOOK_SYMBOL(handle, func) hook_function(handle, #func, (void*) new_##func, (void**) &orig_##func)
+#define HOOK_SYMBOL(handle, func) hook_function(handle, #func, (void*) hook_##func, (void**) &true_##func)
 #define HOOK_DEF(ret, func, ...) \
-  ret (*orig_##func)(__VA_ARGS__); \
-  ret new_##func(__VA_ARGS__)
+  ret (*true_##func)(__VA_ARGS__); \
+  ret hook_##func(__VA_ARGS__)
 #define logfd(i, t) log(i,t,NULL);
 
 #ifdef IS_SOLARIS
@@ -57,14 +57,6 @@ int __xnet_connect(int sock, const struct sockaddr *addr, unsigned int len);
 connect_t true___xnet_connect;
 #endif
 #define INIT() init_lib_wrapper()
-close_t true_close;
-connect_t true_connect;
-gethostbyname_t true_gethostbyname;
-getaddrinfo_t true_getaddrinfo;
-freeaddrinfo_t true_freeaddrinfo;
-getnameinfo_t true_getnameinfo;
-gethostbyaddr_t true_gethostbyaddr;
-sendto_t true_sendto;
 
 int tcp_read_time_out;
 int tcp_connect_time_out;
@@ -159,9 +151,9 @@ HOOK_DEF(struct hostent *, gethostbyaddr, const void *__addr, socklen_t __length
     return gethostbyaddrInner(__addr, __length, __type);
 }
 
-HOOK_DEF(struct hostent *, getnameinfo, const struct sockaddr *__sa, socklen_t __sa_length, char *__host,
-         size_t __host_length, char *__service, size_t __service_length, int __flags) {
-    return orig_getnameinfo(__sa, __sa_length, __host, __host_length, __service, __service_length, __flags);
+HOOK_DEF(int, getnameinfo, const struct sockaddr *__sa, socklen_t __sa_length, char *__host, size_t __host_length,
+         char *__service, size_t __service_length, int __flags) {
+    return true_getnameinfo(__sa, __sa_length, __host, __host_length, __service, __service_length, __flags);
 }
 
 int closeInner(int fd);
@@ -201,7 +193,7 @@ static void do_init(void) {
 
     setup_hooks();
 
-    while (close_fds_cnt) orig_close(close_fds[--close_fds_cnt]);
+    while (close_fds_cnt) true_close(close_fds[--close_fds_cnt]);
 
     init_l = 1;
 }
@@ -398,7 +390,7 @@ int closeInner(int fd) {
     /* prevent rude programs (like ssh) from closing our pipes */
     if (fd != req_pipefd[0] && fd != req_pipefd[1] &&
         fd != resp_pipefd[0] && fd != resp_pipefd[1]) {
-        return orig_close(fd);
+        return true_close(fd);
     }
     err:
     errno = EBADF;
@@ -427,7 +419,7 @@ int connectInner(int sock, const struct sockaddr *addr, unsigned int len) {
     sa_family_t fam = SOCKFAMILY(*addr);
     getsockopt(sock, SOL_SOCKET, SO_TYPE, &socktype, &optlen);
     if (!((fam == AF_INET || fam == AF_INET6) && socktype == SOCK_STREAM))
-        return orig_connect(sock, addr, len);
+        return true_connect(sock, addr, len);
 
     int v6 = dest_ip.is_v6 = fam == AF_INET6;
 
@@ -457,7 +449,7 @@ int connectInner(int sock, const struct sockaddr *addr, unsigned int len) {
                 == (p_addr_in->s_addr & localnet_addr[i].netmask.s_addr)) {
                 if (!localnet_addr[i].port || localnet_addr[i].port == port) {
                     PDEBUG("accessing localnet using true_connect\n");
-                    return orig_connect(sock, addr, len);
+                    return true_connect(sock, addr, len);
                 }
             }
         }
@@ -494,7 +486,7 @@ struct hostent *gethostbynameInner(const char *name) {
     if (proxychains_resolver)
         return proxy_gethostbyname(name, &ghbndata);
     else
-        return orig_gethostbyname(name);
+        return true_gethostbyname(name);
 
     return NULL;
 }
@@ -506,7 +498,7 @@ int getaddrinfoInner(const char *node, const char *service, const struct addrinf
     if (proxychains_resolver)
         return proxy_getaddrinfo(node, service, hints, res);
     else
-        return orig_getaddrinfo(node, service, hints, res);
+        return true_getaddrinfo(node, service, hints, res);
 }
 
 void freeaddrinfoInner(struct addrinfo *res) {
@@ -514,7 +506,7 @@ void freeaddrinfoInner(struct addrinfo *res) {
     PDEBUG("freeaddrinfo %p \n", (void *) res);
 
     if (!proxychains_resolver)
-        orig_freeaddrinfo(res);
+        true_freeaddrinfo(res);
     else
         proxy_freeaddrinfo(res);
 }
@@ -526,7 +518,7 @@ int pc_getnameinfo(const struct sockaddr *sa, socklen_t salen,
     PFUNC();
 
     if (!proxychains_resolver) {
-        return orig_getnameinfo(sa, salen, host, hostlen, serv, servlen, flags);
+        return true_getnameinfo(sa, salen, host, hostlen, serv, servlen, flags);
     } else {
         if (!salen || !(SOCKFAMILY(*sa) == AF_INET || SOCKFAMILY(*sa) == AF_INET6))
             return EAI_FAMILY;
@@ -573,7 +565,7 @@ struct hostent *gethostbyaddrInner(const void *addr, socklen_t len, int type) {
     static struct hostent he;
 
     if (!proxychains_resolver)
-        return orig_gethostbyaddr(addr, len, type);
+        return true_gethostbyaddr(addr, len, type);
     else {
 
         PDEBUG("len %u\n", len);
@@ -610,5 +602,5 @@ ssize_t sendtoInner(int sockfd, const void *buf, size_t len, int flags,
         addrlen = 0;
         flags &= ~MSG_FASTOPEN;
     }
-    return orig_sendto(sockfd, buf, len, flags, dest_addr, addrlen);
+    return true_sendto(sockfd, buf, len, flags, dest_addr, addrlen);
 }

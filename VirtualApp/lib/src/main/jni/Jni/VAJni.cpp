@@ -8,7 +8,7 @@
 #include "VAJni.h"
 //#include "ProxyChain/common.h"
 //extern "C"
-//#include "ProxyChain/libproxychains.h"
+#include "ProxyChain/libproxychains.h"
 
 using namespace facebook::jni;
 

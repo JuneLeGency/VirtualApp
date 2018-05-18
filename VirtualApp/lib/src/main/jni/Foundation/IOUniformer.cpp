@@ -258,126 +258,126 @@ void log(int fd, const char *tag, const struct sockaddr *__addr) {
 
 }
 
-////int socket(int __af, int __type, int __protocol);
-//HOOK_DEF(int, socket, int __af, int __type, int __protocol) {
-//    int ret = syscall(__NR_socket, __af, __type, __protocol);
-//    if (__af > PF_LOCAL) {
-//        ALOGE("IOH socket new fd:%d %d %d %d", ret, __af, __type, __protocol);
-//        hook_fds[ret] = __af;
-//    }
-//    return ret;
-//}
-//
-////int connect(int __fd, const struct sockaddr* __addr, socklen_t __addr_length)
-//HOOK_DEF(int, connect, int __fd, const struct sockaddr *__addr, socklen_t __addr_length) {
-//    log(__fd, "connect", __addr);
-//    if (needHook(__fd)) {
-//        return syscall(__NR_connect, vpnFd, __addr, __addr_length);
-//    }
-//    int ret = syscall(__NR_connect, __fd, __addr, __addr_length);
-//    log(__fd, "connectFinished", __addr);
-//    return ret;
-//}
-//
-//
-////ssize_t send(int __fd, const void* __buf, size_t __n, int __flags)
-//HOOK_DEF(size_t, send, int __fd, const void *__buf, size_t __n, int __flags) {
-//    logfd(__fd, "connect");
-//    if (needHook(__fd)) {
-//        orig_send(vpnFd, __buf, __n, __flags);
-//    }
-//    return orig_send(__fd, __buf, __n, __flags);
-//}
-//
-////ssize_t recv(int __fd, void* __buf, size_t __n, int __flags)
-//HOOK_DEF(ssize_t, recv, int __fd, void *__buf, size_t __n, int __flags) {
-//    logfd(__fd, "recv");
-//    if (needHook(__fd)) {
-//        orig_recv(vpnFd, __buf, __n, __flags);
-//    }
-//    return orig_recv(__fd, __buf, __n, __flags);
-//}
-//
-////ssize_t sendto(int __fd, const void* __buf, size_t __n, int __flags, const struct sockaddr* __dst_addr, socklen_t __dst_addr_length)
-//HOOK_DEF(ssize_t, sendto, int __fd, const void *__buf, size_t __n, int __flags, const struct sockaddr *__dst_addr,
-//         socklen_t __dst_addr_length) {
-//    log(__fd, "sendto", __dst_addr);
-//    if (needHook(__fd)) {
-//        return orig_sendto(vpnFd, __buf, __n, __flags, __dst_addr, __dst_addr_length);
-//    }
-//    ssize_t ret = orig_sendto(__fd, __buf, __n, __flags, __dst_addr, __dst_addr_length);
-//    return ret;
-//}
-//// ssize_t recvmsg(int __fd, struct msghdr* __msg, int __flags)
-//HOOK_DEF(ssize_t, recvmsg, int __fd, struct msghdr *__msg, int __flags) {
-//    logfd(__fd, "recvmsg");
-//    if (needHook(__fd)) {
-//        orig_recvmsg(vpnFd, __msg, __flags);
-//    }
-//    return orig_recvmsg(__fd, __msg, __flags);
-//}
-//
-////ssize_t sendmsg(int __fd, const void* __buf, size_t __n, int __flags, const struct sockaddr* __dst_addr, socklen_t __dst_addr_length)
-//HOOK_DEF(ssize_t, sendmsg, int __fd, const struct msghdr *__msg, int __flags) {
-//    logfd(__fd, "sendmsg");
-//    if (needHook(__fd)) {
-//        return orig_sendmsg(vpnFd, __msg, __flags);
-//    }
-//    ssize_t ret = orig_sendmsg(__fd, __msg, __flags);
-//    return ret;
-//}
-//
-////ssize_t recvfrom(int __fd, void* __buf, size_t __n, int __flags, struct sockaddr* __src_addr, socklen_t* __src_addr_length)
-//HOOK_DEF(ssize_t, recvfrom, int __fd, void *__buf, size_t __n, int __flags, struct sockaddr *__src_addr,
-//         socklen_t *__src_addr_length) {
-//    log(__fd, "recvfrom", __src_addr);
-//    if (needHook(__fd)) {
-//        return orig_recvfrom(vpnFd, __buf, __n, __flags, __src_addr, __src_addr_length);
-//    }
-//    ssize_t ret = orig_recvfrom(__fd, __buf, __n, __flags, __src_addr, __src_addr_length);
-//    return ret;
-//}
-//
-////int close(int __fd);
-//HOOK_DEF(int, close, int __fd) {
-//    logfd(__fd, "close");
-//    int ret = syscall(__NR_close, __fd);
-//    return ret;
-//}
-//
-////ssize_t read(int __fd, void* __buf, size_t __count)
-//HOOK_DEF(ssize_t, read, int __fd, void *__buf, size_t __count) {
-//    logfd(__fd, "read");
-//    if (needHook(__fd)) {
-//        return orig_read(vpnFd, __buf, __count);
-//    }
-//    return orig_read(__fd, __buf, __count);
-//}
-//
-////ssize_t write(int __fd, const void* __buf, size_t __count)
-//HOOK_DEF(ssize_t, write, int __fd, const void *__buf, size_t __count) {
-//    logfd(__fd, "write");
-//    if (needHook(__fd)) {
-//        return orig_write(vpnFd, __buf, __count);
-//    }
-//    return orig_write(__fd, __buf, __count);
-//}
-////ssize_t readv(int __fd, const struct iovec* __iov, int __count);
-//HOOK_DEF(ssize_t, readv, int __fd, const struct iovec *__iov, int __count) {
-//    logfd(__fd, "readv");
-//    if (needHook(__fd)) {
-//        return orig_readv(vpnFd, __iov, __count);
-//    }
-//    return orig_readv(__fd, __iov, __count);
-//}
-////ssize_t writev(int __fd, const struct iovec* __iov, int __count)
-//HOOK_DEF(ssize_t, writev, int __fd, const struct iovec *__iov, int __count) {
-//    logfd(__fd, "writev");
-//    if (needHook(__fd)) {
-//        return orig_writev(vpnFd, __iov, __count);
-//    }
-//    return orig_writev(__fd, __iov, __count);
-//}
+//int socket(int __af, int __type, int __protocol);
+HOOK_DEF(int, socket, int __af, int __type, int __protocol) {
+    int ret = syscall(__NR_socket, __af, __type, __protocol);
+    if (__af > PF_LOCAL) {
+        ALOGE("IOH socket new fd:%d %d %d %d", ret, __af, __type, __protocol);
+        hook_fds[ret] = __af;
+    }
+    return ret;
+}
+
+//int connect(int __fd, const struct sockaddr* __addr, socklen_t __addr_length)
+HOOK_DEF(int, connect, int __fd, const struct sockaddr *__addr, socklen_t __addr_length) {
+    log(__fd, "connect", __addr);
+    if (needHook(__fd)) {
+        return syscall(__NR_connect, vpnFd, __addr, __addr_length);
+    }
+    int ret = syscall(__NR_connect, __fd, __addr, __addr_length);
+    log(__fd, "connectFinished", __addr);
+    return ret;
+}
+
+
+//ssize_t send(int __fd, const void* __buf, size_t __n, int __flags)
+HOOK_DEF(size_t, send, int __fd, const void *__buf, size_t __n, int __flags) {
+    logfd(__fd, "connect");
+    if (needHook(__fd)) {
+        orig_send(vpnFd, __buf, __n, __flags);
+    }
+    return orig_send(__fd, __buf, __n, __flags);
+}
+
+//ssize_t recv(int __fd, void* __buf, size_t __n, int __flags)
+HOOK_DEF(ssize_t, recv, int __fd, void *__buf, size_t __n, int __flags) {
+    logfd(__fd, "recv");
+    if (needHook(__fd)) {
+        orig_recv(vpnFd, __buf, __n, __flags);
+    }
+    return orig_recv(__fd, __buf, __n, __flags);
+}
+
+//ssize_t sendto(int __fd, const void* __buf, size_t __n, int __flags, const struct sockaddr* __dst_addr, socklen_t __dst_addr_length)
+HOOK_DEF(ssize_t, sendto, int __fd, const void *__buf, size_t __n, int __flags, const struct sockaddr *__dst_addr,
+         socklen_t __dst_addr_length) {
+    log(__fd, "sendto", __dst_addr);
+    if (needHook(__fd)) {
+        return orig_sendto(vpnFd, __buf, __n, __flags, __dst_addr, __dst_addr_length);
+    }
+    ssize_t ret = orig_sendto(__fd, __buf, __n, __flags, __dst_addr, __dst_addr_length);
+    return ret;
+}
+// ssize_t recvmsg(int __fd, struct msghdr* __msg, int __flags)
+HOOK_DEF(ssize_t, recvmsg, int __fd, struct msghdr *__msg, int __flags) {
+    logfd(__fd, "recvmsg");
+    if (needHook(__fd)) {
+        orig_recvmsg(vpnFd, __msg, __flags);
+    }
+    return orig_recvmsg(__fd, __msg, __flags);
+}
+
+//ssize_t sendmsg(int __fd, const void* __buf, size_t __n, int __flags, const struct sockaddr* __dst_addr, socklen_t __dst_addr_length)
+HOOK_DEF(ssize_t, sendmsg, int __fd, const struct msghdr *__msg, int __flags) {
+    logfd(__fd, "sendmsg");
+    if (needHook(__fd)) {
+        return orig_sendmsg(vpnFd, __msg, __flags);
+    }
+    ssize_t ret = orig_sendmsg(__fd, __msg, __flags);
+    return ret;
+}
+
+//ssize_t recvfrom(int __fd, void* __buf, size_t __n, int __flags, struct sockaddr* __src_addr, socklen_t* __src_addr_length)
+HOOK_DEF(ssize_t, recvfrom, int __fd, void *__buf, size_t __n, int __flags, struct sockaddr *__src_addr,
+         socklen_t *__src_addr_length) {
+    log(__fd, "recvfrom", __src_addr);
+    if (needHook(__fd)) {
+        return orig_recvfrom(vpnFd, __buf, __n, __flags, __src_addr, __src_addr_length);
+    }
+    ssize_t ret = orig_recvfrom(__fd, __buf, __n, __flags, __src_addr, __src_addr_length);
+    return ret;
+}
+
+//int close(int __fd);
+HOOK_DEF(int, close, int __fd) {
+    logfd(__fd, "close");
+    int ret = syscall(__NR_close, __fd);
+    return ret;
+}
+
+//ssize_t read(int __fd, void* __buf, size_t __count)
+HOOK_DEF(ssize_t, read, int __fd, void *__buf, size_t __count) {
+    logfd(__fd, "read");
+    if (needHook(__fd)) {
+        return orig_read(vpnFd, __buf, __count);
+    }
+    return orig_read(__fd, __buf, __count);
+}
+
+//ssize_t write(int __fd, const void* __buf, size_t __count)
+HOOK_DEF(ssize_t, write, int __fd, const void *__buf, size_t __count) {
+    logfd(__fd, "write");
+    if (needHook(__fd)) {
+        return orig_write(vpnFd, __buf, __count);
+    }
+    return orig_write(__fd, __buf, __count);
+}
+//ssize_t readv(int __fd, const struct iovec* __iov, int __count);
+HOOK_DEF(ssize_t, readv, int __fd, const struct iovec *__iov, int __count) {
+    logfd(__fd, "readv");
+    if (needHook(__fd)) {
+        return orig_readv(vpnFd, __iov, __count);
+    }
+    return orig_readv(__fd, __iov, __count);
+}
+//ssize_t writev(int __fd, const struct iovec* __iov, int __count)
+HOOK_DEF(ssize_t, writev, int __fd, const struct iovec *__iov, int __count) {
+    logfd(__fd, "writev");
+    if (needHook(__fd)) {
+        return orig_writev(vpnFd, __iov, __count);
+    }
+    return orig_writev(__fd, __iov, __count);
+}
 
 
 
@@ -946,25 +946,25 @@ void IOUniformer::startUniformer(const char *so_path, int api_level, int preview
     void *handle = dlopen("libc.so", RTLD_NOW);
     if (handle) {
         //socket hook
-//        HOOK_SYMBOL(handle, socket);
-//        HOOK_SYMBOL(handle, connect);
-//
-//        HOOK_SYMBOL(handle, send);// send recv will call sendto or recvfrom
-//        HOOK_SYMBOL(handle, recv);
-//
-//        HOOK_SYMBOL(handle, recvmsg);
-//        HOOK_SYMBOL(handle, sendmsg);
-//
-//        HOOK_SYMBOL(handle, recvfrom);
-//        HOOK_SYMBOL(handle, sendto);
-//
-//        //fd
-//        HOOK_SYMBOL(handle, close);
-//        HOOK_SYMBOL(handle, read);
-//        HOOK_SYMBOL(handle, write);
-//
-//        HOOK_SYMBOL(handle, readv);
-//        HOOK_SYMBOL(handle, writev);
+        HOOK_SYMBOL(handle, socket);
+        HOOK_SYMBOL(handle, connect);
+
+        HOOK_SYMBOL(handle, send);// send recv will call sendto or recvfrom
+        HOOK_SYMBOL(handle, recv);
+
+        HOOK_SYMBOL(handle, recvmsg);
+        HOOK_SYMBOL(handle, sendmsg);
+
+        HOOK_SYMBOL(handle, recvfrom);
+        HOOK_SYMBOL(handle, sendto);
+
+        //fd
+        HOOK_SYMBOL(handle, close);
+        HOOK_SYMBOL(handle, read);
+        HOOK_SYMBOL(handle, write);
+
+        HOOK_SYMBOL(handle, readv);
+        HOOK_SYMBOL(handle, writev);
         /*
          * read()/write() io
             recv()/send()  socket
