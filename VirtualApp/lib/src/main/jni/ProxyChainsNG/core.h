@@ -83,7 +83,29 @@ int connect_proxy_chain (int sock, ip_type target_ip, unsigned short target_port
 
 void proxychains_write_log(char *str, ...);
 
+typedef int (*close_t)(int);
+typedef int (*connect_t)(int, const struct sockaddr *, socklen_t);
+typedef struct hostent* (*gethostbyname_t)(const char *);
+typedef int (*freeaddrinfo_t)(struct addrinfo *);
+typedef struct hostent *(*gethostbyaddr_t) (const void *, socklen_t, int);
 
+typedef int (*getaddrinfo_t)(const char *, const char *, const struct addrinfo *,
+			     struct addrinfo **);
+
+typedef int (*getnameinfo_t) (const struct sockaddr *, socklen_t, char *,
+			      socklen_t, char *, socklen_t, int);
+
+typedef ssize_t (*sendto_t) (int sockfd, const void *buf, size_t len, int flags,
+			     const struct sockaddr *dest_addr, socklen_t addrlen);
+
+
+
+extern connect_t true_connect;
+extern gethostbyname_t true_gethostbyname;
+extern getaddrinfo_t true_getaddrinfo;
+extern freeaddrinfo_t true_freeaddrinfo;
+extern getnameinfo_t true_getnameinfo;
+extern gethostbyaddr_t true_gethostbyaddr;
 
 struct gethostbyname_data {
 	struct hostent hostent_space;
@@ -93,8 +115,8 @@ struct gethostbyname_data {
 };
 
 struct hostent* proxy_gethostbyname(const char *name, struct gethostbyname_data *data);
-int (*true_connect)(int __fd, const struct sockaddr* __addr, socklen_t __addr_length);
-int proxy_getaddrinfo(const char *node, const char *service, 
+
+int proxy_getaddrinfo(const char *node, const char *service,
 		      const struct addrinfo *hints, struct addrinfo **res);
 void proxy_freeaddrinfo(struct addrinfo *res);
 
@@ -108,4 +130,3 @@ void core_unload(void);
 //RcB: DEP "core.c"
 //RcB: DEP "libproxychains.c"
 //RcB: LINK "-Wl,--no-as-needed -ldl -lpthread"
-

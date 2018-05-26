@@ -259,6 +259,7 @@ public final class VClientImpl extends IVClient.Stub {
             startIOUniformer();
         }
         NativeEngine.launchEngine();
+        NetHook.init();
         Object mainThread = VirtualCore.mainThread();
         NativeEngine.startDexOverride();
         Context context = createPackageContext(data.appInfo.packageName);
@@ -414,9 +415,9 @@ public final class VClientImpl extends IVClient.Stub {
 
         VirtualStorageManager vsManager = VirtualStorageManager.get();
         String vsPath = vsManager.getVirtualStorage(info.packageName, userId);
-        vsPath = VEnvironment.getVirtualAppSD(info.packageName).getAbsolutePath();
+        //vsPath = VEnvironment.getVirtualAppSD(info.packageName).getAbsolutePath();
         boolean enable = vsManager.isVirtualStorageEnable(info.packageName, userId);
-        enable = true;
+        //enable = true;
         if (enable && vsPath != null) {
             File vsDirectory = new File(vsPath);
             if (vsDirectory.exists() || vsDirectory.mkdirs()) {

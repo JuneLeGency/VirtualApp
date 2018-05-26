@@ -946,17 +946,17 @@ void IOUniformer::startUniformer(const char *so_path, int api_level, int preview
     void *handle = dlopen("libc.so", RTLD_NOW);
     if (handle) {
         //socket hook
-        HOOK_SYMBOL(handle, socket);
-        HOOK_SYMBOL(handle, connect);
+//        HOOK_SYMBOL(handle, socket);
+//        HOOK_SYMBOL(handle, connect);
 
-        HOOK_SYMBOL(handle, send);// send recv will call sendto or recvfrom
-        HOOK_SYMBOL(handle, recv);
+//        HOOK_SYMBOL(handle, send);// send recv will call sendto or recvfrom
+//        HOOK_SYMBOL(handle, recv);
 
-        HOOK_SYMBOL(handle, recvmsg);
-        HOOK_SYMBOL(handle, sendmsg);
-
-        HOOK_SYMBOL(handle, recvfrom);
-        HOOK_SYMBOL(handle, sendto);
+//        HOOK_SYMBOL(handle, recvmsg);
+//        HOOK_SYMBOL(handle, sendmsg);
+//
+//        HOOK_SYMBOL(handle, recvfrom);
+//        HOOK_SYMBOL(handle, sendto);
 
         //fd
         HOOK_SYMBOL(handle, close);

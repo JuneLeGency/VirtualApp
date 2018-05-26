@@ -48,6 +48,7 @@ Sophix
 [QFix](https://github.com/lizhangqu/QFix)
 
 [Android 增量更新](https://github.com/JackCho/AndroidPatchUpdate)
+[Stark](https://github.com/ximsfei/Stark)
 
 
 

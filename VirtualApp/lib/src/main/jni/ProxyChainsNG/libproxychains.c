@@ -23,7 +23,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <assert.h>
 #include <netdb.h>
 
 #include <netinet/in.h>
@@ -35,9 +34,9 @@
 #include <pthread.h>
 #include <Substrate/CydiaSubstrate.h>
 
+
 #include "core.h"
 #include "common.h"
-#include "libproxychains.h"
 
 #define     satosin(x)      ((struct sockaddr_in *) &(x))
 #define     SOCKADDR(x)     (satosin(x)->sin_addr.s_addr)
@@ -45,18 +44,15 @@
 #define     SOCKPORT(x)     (satosin(x)->sin_port)
 #define     SOCKFAMILY(x)     (satosin(x)->sin_family)
 #define     MAX_CHAIN 512
-#define HOOK_SYMBOL(handle, func) hook_function(handle, #func, (void*) hook_##func, (void**) &true_##func)
-#define HOOK_DEF(ret, func, ...) \
-  ret (*true_##func)(__VA_ARGS__); \
-  ret hook_##func(__VA_ARGS__)
-#define logfd(i, t) log(i,t,NULL);
 
-#ifdef IS_SOLARIS
-#undef connect
-int __xnet_connect(int sock, const struct sockaddr *addr, unsigned int len);
-connect_t true___xnet_connect;
-#endif
-#define INIT() init_lib_wrapper()
+close_t true_close;
+connect_t true_connect;
+gethostbyname_t true_gethostbyname;
+getaddrinfo_t true_getaddrinfo;
+freeaddrinfo_t true_freeaddrinfo;
+getnameinfo_t true_getnameinfo;
+gethostbyaddr_t true_gethostbyaddr;
+sendto_t true_sendto;
 
 int tcp_read_time_out;
 int tcp_connect_time_out;
@@ -78,109 +74,56 @@ static int init_l = 0;
 
 static inline void get_chain_data(proxy_data *pd, unsigned int *proxy_count, chain_type *ct);
 
-static void *load_sym(char *symname, void *proxyfunc) {
+#define INIT() init_lib_wrapper(__FUNCTION__)
 
-    void *funcptr = dlsym(RTLD_NEXT, symname);
-
-    if (!funcptr) {
-        fprintf(stderr, "Cannot load symbol '%s' %s\n", symname, dlerror());
-        exit(1);
-    } else {
-        PDEBUG("loaded symbol '%s'" " real addr %p  wrapped addr %p\n", symname, funcptr, proxyfunc);
-    }
-    if (funcptr == proxyfunc) {
-        PDEBUG("circular reference detected, aborting!\n");
-        abort();
-    }
-    return funcptr;
-}
-
-#define SETUP_SYM(X) do { if (! true_ ## X ) true_ ## X = load_sym( # X, X ); } while(0)
+#define SETUP_SYM(name) do { \
+    MSHookFunction(name, (void *) custom_ ## name, (void **) &true_ ## name); \
+    PDEBUG("interposed %s: %p -> %p", #name, name, true_ ## name); \
+} while(0)
 
 #include "allocator_thread.h"
 
 const char *proxychains_get_version(void);
 
-static inline void
-hook_function(void *handle, const char *symbol, void *new_func, void **old_func) {
-    void *addr = dlsym(handle, symbol);
-    if (addr == NULL) {
-        return;
-    }
-    MSHookFunction(addr, new_func, old_func);
-}
+static int custom_connect(int sock, const struct sockaddr *addr, socklen_t len);
 
-int connectInner(int sock, const struct sockaddr *addr, unsigned int len);
+static ssize_t custom_sendto(int __fd, const void *__buf, size_t __n, int __flags, const struct sockaddr *__dst_addr,
+                             socklen_t __dst_addr_length);
 
-HOOK_DEF(int, connect, int __fd, const struct sockaddr *__addr, socklen_t __addr_length) {
-    int ret = connectInner(__fd, __addr, __addr_length);
-    return ret;
-}
+static struct hostent *custom_gethostbyname(const char *name);
 
-ssize_t sendtoInner(int sockfd, const void *buf, size_t len, int flags,
-                    const struct sockaddr *dest_addr, socklen_t addrlen);
+static int custom_getaddrinfo(const char *node, const char *service, const struct addrinfo *hints, struct addrinfo **res);
 
-HOOK_DEF(ssize_t, sendto, int __fd, const void *__buf, size_t __n, int __flags, const struct sockaddr *__dst_addr,
-         socklen_t __dst_addr_length) {
-    return sendtoInner(__fd, __buf, __n, __flags, __dst_addr, __dst_addr_length);
-}
+static void custom_freeaddrinfo(struct addrinfo *res);
 
-struct hostent *gethostbynameInner(const char *name);
-//struct hostent* gethostbyname(const char* __name);
-HOOK_DEF(struct hostent *, gethostbyname, const char *__name) {
-    return gethostbynameInner(__name);
-}
+static struct hostent *custom_gethostbyaddr(const void *addr, socklen_t len, int type);
 
-int
-getaddrinfoInner(const char *__node, const char *__service, const struct addrinfo *__hints, struct addrinfo **__result);
+static int custom_close(int __fd);
 
-HOOK_DEF(int, getaddrinfo, const char *__node, const char *__service, const struct addrinfo *__hints,
-         struct addrinfo **__result) {
-    return getaddrinfoInner(__node, __service, __hints, __result);
-}
-
-void freeaddrinfoInner(struct addrinfo *__ptr);
-
-HOOK_DEF(void, freeaddrinfo, struct addrinfo *__ptr) {
-    freeaddrinfoInner(__ptr);
-}
-
-struct hostent *gethostbyaddrInner(const void *__addr, socklen_t __length, int __type);
-
-HOOK_DEF(struct hostent *, gethostbyaddr, const void *__addr, socklen_t __length, int __type) {
-    return gethostbyaddrInner(__addr, __length, __type);
-}
-
-HOOK_DEF(int, getnameinfo, const struct sockaddr *__sa, socklen_t __sa_length, char *__host, size_t __host_length,
-         char *__service, size_t __service_length, int __flags) {
-    return true_getnameinfo(__sa, __sa_length, __host, __host_length, __service, __service_length, __flags);
-}
-
-int closeInner(int fd);
-
-HOOK_DEF(int, close, int fd) {
-    return closeInner(fd);
-}
+#ifndef ANDROID
+static int pc_getnameinfo(const struct sockaddr *sa, socklen_t salen,
+               char *host, socklen_t hostlen, char *serv,
+               socklen_t servlen, int flags)
+#endif
 
 static void setup_hooks(void) {
-    void *handle = dlopen("libc.so", RTLD_NOW);
-    HOOK_SYMBOL(handle, connect);
-    HOOK_SYMBOL(handle, sendto);
-    HOOK_SYMBOL(handle, gethostbyname);
-    HOOK_SYMBOL(handle, getaddrinfo);
-    HOOK_SYMBOL(handle, freeaddrinfo);
-    HOOK_SYMBOL(handle, gethostbyaddr);
-    HOOK_SYMBOL(handle, getnameinfo);
-    HOOK_SYMBOL(handle, close);
-#ifdef IS_SOLARIS
-    SETUP_SYM(__xnet_connect);
+    SETUP_SYM(connect);
+    SETUP_SYM(sendto);
+    SETUP_SYM(gethostbyname);
+    SETUP_SYM(getaddrinfo);
+    SETUP_SYM(freeaddrinfo);
+    SETUP_SYM(gethostbyaddr);
+#ifndef ANDROID
+    SETUP_SYM(getnameinfo);
 #endif
+    SETUP_SYM(close);
 }
 
 static int close_fds[16];
 static int close_fds_cnt = 0;
 
 static void do_init(void) {
+    setenv(PROXYCHAINS_CONF_FILE_ENV_VAR, "/sdcard/proxychains.conf", 1);
     srand(time(NULL));
     core_initialize();
     at_init();
@@ -189,7 +132,7 @@ static void do_init(void) {
     get_chain_data(proxychains_pd, &proxychains_proxy_count, &proxychains_ct);
     DUMP_PROXY_CHAIN(proxychains_pd, proxychains_proxy_count);
 
-    proxychains_write_log(LOG_PREFIX "DLL init: proxychains-ng %s\n", proxychains_get_version());
+    PDEBUG(LOG_PREFIX "DLL init: proxychains-ng %s\n", proxychains_get_version());
 
     setup_hooks();
 
@@ -198,18 +141,18 @@ static void do_init(void) {
     init_l = 1;
 }
 
-void init_lib_wrapper() {
-//#ifndef DEBUG
-//    (void) caller;
-//#endif
-//    if (!init_l) PDEBUG("%s called from %s\n", __FUNCTION__, caller);
+static void init_lib_wrapper(const char *caller) {
+#ifndef DEBUG
+    (void) caller;
+#endif
+    if (!init_l) PDEBUG("%s called from %s\n", __FUNCTION__, caller);
     pthread_once(&init_once, do_init);
 }
 
-/* if we use gcc >= 3, we can instruct the dynamic loader 
+/* if we use gcc >= 3, we can instruct the dynamic loader
  * to call init_lib at link time. otherwise it gets loaded
  * lazily, which has the disadvantage that there's a potential
- * race condition if 2 threads call it before init_l is set 
+ * race condition if 2 threads call it before init_l is set
  * and PTHREAD support was disabled */
 #if __GNUC__ > 2
 
@@ -239,7 +182,7 @@ static void get_chain_data(proxy_data *pd, unsigned int *proxy_count, chain_type
 
     env = get_config_path(getenv(PROXYCHAINS_CONF_FILE_ENV_VAR), buff, sizeof(buff));
     if ((file = fopen(env, "r")) == NULL) {
-        perror("couldnt read configuration file");
+        PDEBUG("couldnt read configuration file");
         exit(1);
     }
 
@@ -262,7 +205,7 @@ static void get_chain_data(proxy_data *pd, unsigned int *proxy_count, chain_type
                 int ret = sscanf(buff, "%s %s %d %s %s", type, host, &port_n, pd[count].user, pd[count].pass);
                 if (ret < 3 || ret == EOF) {
                     inv:
-                    fprintf(stderr, "error: invalid item in proxylist section: %s", buff);
+                    PDEBUG( "error: invalid item in proxylist section: %s", buff);
                     exit(1);
                 }
 
@@ -271,7 +214,7 @@ static void get_chain_data(proxy_data *pd, unsigned int *proxy_count, chain_type
                 pd[count].port = htons((unsigned short) port_n);
                 ip_type *host_ip = &pd[count].ip;
                 if (1 != inet_pton(host_ip->is_v6 ? AF_INET6 : AF_INET, host, host_ip->addr.v6)) {
-                    fprintf(stderr, "proxy %s has invalid value or is not numeric\n", host);
+                    PDEBUG( "proxy %s has invalid value or is not numeric\n", host);
                     exit(1);
                 }
 
@@ -304,13 +247,13 @@ static void get_chain_data(proxy_data *pd, unsigned int *proxy_count, chain_type
                 } else if (strstr(buff, "remote_dns_subnet")) {
                     sscanf(buff, "%s %u", user, &remote_dns_subnet);
                     if (remote_dns_subnet >= 256) {
-                        fprintf(stderr,
+                        PDEBUG(
                                 "remote_dns_subnet: invalid value. requires a number between 0 and 255.\n");
                         exit(1);
                     }
                 } else if (strstr(buff, "localnet")) {
                     if (sscanf(buff, "%s %21[^/]/%15s", user, local_in_addr_port, local_netmask) < 3) {
-                        fprintf(stderr, "localnet format error");
+                        PDEBUG( "localnet format error");
                         exit(1);
                     }
                     /* clean previously used buffer */
@@ -329,14 +272,14 @@ static void get_chain_data(proxy_data *pd, unsigned int *proxy_count, chain_type
                                 inet_pton(AF_INET, local_in_addr,
                                           &localnet_addr[num_localnet_addr].in_addr);
                         if (error <= 0) {
-                            fprintf(stderr, "localnet address error\n");
+                            PDEBUG( "localnet address error\n");
                             exit(1);
                         }
                         error =
                                 inet_pton(AF_INET, local_netmask,
                                           &localnet_addr[num_localnet_addr].netmask);
                         if (error <= 0) {
-                            fprintf(stderr, "localnet netmask error\n");
+                            PDEBUG( "localnet netmask error\n");
                             exit(1);
                         }
                         if (local_in_port[0]) {
@@ -347,14 +290,14 @@ static void get_chain_data(proxy_data *pd, unsigned int *proxy_count, chain_type
                         }
                         ++num_localnet_addr;
                     } else {
-                        fprintf(stderr, "# of localnet exceed %d.\n", MAX_LOCALNET);
+                        PDEBUG( "# of localnet exceed %d.\n", MAX_LOCALNET);
                     }
                 } else if (strstr(buff, "chain_len")) {
                     char *pc;
                     int len;
                     pc = strchr(buff, '=');
                     if (!pc) {
-                        fprintf(stderr, "error: missing equals sign '=' in chain_len directive.\n");
+                        PDEBUG( "error: missing equals sign '=' in chain_len directive.\n");
                         exit(1);
                     }
                     len = atoi(++pc);
@@ -371,7 +314,7 @@ static void get_chain_data(proxy_data *pd, unsigned int *proxy_count, chain_type
     fclose(file);
 #endif
     if (!count) {
-        fprintf(stderr, "error: no valid proxy found in config\n");
+        PDEBUG( "error: no valid proxy found in config\n");
         exit(1);
     }
     *proxy_count = count;
@@ -380,7 +323,7 @@ static void get_chain_data(proxy_data *pd, unsigned int *proxy_count, chain_type
 
 /*******  HOOK FUNCTIONS  *******/
 
-int closeInner(int fd) {
+int custom_close(int fd) {
     if (!init_l) {
         if (close_fds_cnt >= (sizeof close_fds / sizeof close_fds[0])) goto err;
         close_fds[close_fds_cnt++] = fd;
@@ -398,10 +341,41 @@ int closeInner(int fd) {
 }
 
 static int is_v4inv6(const struct in6_addr *a) {
-    return !memcmp(a->s6_addr, "\0\0\0\0\0\0\0\0\0\0\xff\xff", 12);
+    return a->s6_addr32[0] == 0 && a->s6_addr32[1] == 0 &&
+           a->s6_addr16[4] == 0 && a->s6_addr16[5] == 0xffff;
 }
+struct addr {
+    char ip[128];
+    int port;
+};
+struct addr parse(const struct sockaddr *__addr) {
+    struct addr t;
+    if (__addr == NULL) {
+        return t;
+    }
+    PDEBUG("sa %d",__addr->sa_family);
+    if (__addr->sa_family == AF_INET) {
+        PDEBUG("ip v4");
+        struct sockaddr_in *sa4 = (struct sockaddr_in *) __addr;
+        inet_ntop(AF_INET, (void *) (struct sockaddr *) &sa4->sin_addr, t.ip, 128);
+        t.port = ntohs(sa4->sin_port);
+    } else if (__addr->sa_family == AF_INET6) {
+        PDEBUG("ip v6");
+        struct sockaddr_in6 *sa6 = (struct sockaddr_in6 *) __addr;
+        char *ipv6 = NULL;
+        inet_ntop(AF_INET6, (void *) (struct sockaddr *) &sa6->sin6_addr, t.ip, 128);
+        ipv6 = strstr(t.ip, "f:");
+        if (NULL != ipv6) {
+            strcpy(t.ip, ipv6 + 2);
+        }
+        t.port = ntohs(sa6->sin6_port);
+    } else {
+    }
+    return t;
 
-int connectInner(int sock, const struct sockaddr *addr, unsigned int len) {
+}
+int custom_connect(int sock, const struct sockaddr *addr, socklen_t len) {
+    PDEBUG("connect %d ip：%s",sock,parse(addr).ip);
     INIT();
     PFUNC();
 
@@ -429,16 +403,16 @@ int connectInner(int sock, const struct sockaddr *addr, unsigned int len) {
                : ntohs(((struct sockaddr_in6 *) addr)->sin6_port);
     struct in_addr v4inv6;
     if (v6 && is_v4inv6(p_addr_in6)) {
-        memcpy(&v4inv6.s_addr, &p_addr_in6->s6_addr[12], 4);
+        memcpy(&v4inv6.s_addr, &p_addr_in6->s6_addr32[3], 4);
         v6 = dest_ip.is_v6 = 0;
         p_addr_in = &v4inv6;
     }
 
 //      PDEBUG("localnet: %s; ", inet_ntop(AF_INET,&in_addr_localnet, str, sizeof(str)));
 //      PDEBUG("netmask: %s; " , inet_ntop(AF_INET, &in_addr_netmask, str, sizeof(str)));
-    PDEBUG("target: %s\n",
-           inet_ntop(v6 ? AF_INET6 : AF_INET, v6 ? (void *) p_addr_in6 : (void *) p_addr_in, str, sizeof(str)));
-    PDEBUG("port: %d\n", port);
+//    PDEBUG("target: %s\n",
+//           inet_ntop(v6 ? AF_INET6 : AF_INET, v6 ? (void *) p_addr_in6 : (void *) p_addr_in, str, sizeof(str)));
+//    PDEBUG("port: %d\n", port);
 
     // check if connect called from proxydns
     remote_dns_connect = !v6 && (ntohl(p_addr_in->s_addr) >> 24 == remote_dns_subnet);
@@ -471,15 +445,9 @@ int connectInner(int sock, const struct sockaddr *addr, unsigned int len) {
     return ret;
 }
 
-#ifdef IS_SOLARIS
-int __xnet_connect(int sock, const struct sockaddr *addr, unsigned int len) {
-    return connect(sock, addr, len);
-}
-#endif
-
 static struct gethostbyname_data ghbndata;
 
-struct hostent *gethostbynameInner(const char *name) {
+struct hostent *custom_gethostbyname(const char *name) {
     INIT();
     PDEBUG("gethostbyname: %s\n", name);
 
@@ -491,7 +459,7 @@ struct hostent *gethostbynameInner(const char *name) {
     return NULL;
 }
 
-int getaddrinfoInner(const char *node, const char *service, const struct addrinfo *hints, struct addrinfo **res) {
+int custom_getaddrinfo(const char *node, const char *service, const struct addrinfo *hints, struct addrinfo **res) {
     INIT();
     PDEBUG("getaddrinfo: %s %s\n", node ? node : "null", service ? service : "null");
 
@@ -501,7 +469,7 @@ int getaddrinfoInner(const char *node, const char *service, const struct addrinf
         return true_getaddrinfo(node, service, hints, res);
 }
 
-void freeaddrinfoInner(struct addrinfo *res) {
+void custom_freeaddrinfo(struct addrinfo *res) {
     INIT();
     PDEBUG("freeaddrinfo %p \n", (void *) res);
 
@@ -532,7 +500,7 @@ int pc_getnameinfo(const struct sockaddr *sa, socklen_t salen,
             unsigned scopeid = 0;
             if (v6) {
                 if (is_v4inv6(&((struct sockaddr_in6 *) sa)->sin6_addr)) {
-                    memcpy(v4inv6buf, &((struct sockaddr_in6 *) sa)->sin6_addr.s6_addr[12], 4);
+                    memcpy(v4inv6buf, &((struct sockaddr_in6 *) sa)->sin6_addr.s6_addr32[3], 4);
                     ip = v4inv6buf;
                     v6 = 0;
                 } else
@@ -554,7 +522,12 @@ int pc_getnameinfo(const struct sockaddr *sa, socklen_t salen,
     return 0;
 }
 
-struct hostent *gethostbyaddrInner(const void *addr, socklen_t len, int type) {
+#ifdef ANDROID
+
+struct hostent *custom_gethostbyaddr(const void *addr, socklen_t len, int type) {
+#else
+    struct hostent *custom_gethostbyaddr(const void *addr, socklen_t len, int type) {
+#endif
     INIT();
     PDEBUG("TODO: proper gethostbyaddr hook\n");
 
@@ -590,12 +563,14 @@ struct hostent *gethostbyaddrInner(const void *addr, socklen_t len, int type) {
 #   define MSG_FASTOPEN 0x20000000
 #endif
 
-ssize_t sendtoInner(int sockfd, const void *buf, size_t len, int flags,
-                    const struct sockaddr *dest_addr, socklen_t addrlen) {
+ssize_t custom_sendto(int sockfd, const void *buf, size_t len, int flags,
+                      const struct sockaddr *dest_addr, socklen_t addrlen) {
+    PDEBUG("send to %d %s",sockfd, buf);
     INIT();
     PFUNC();
     if (flags & MSG_FASTOPEN) {
-        if (!connectInner(sockfd, dest_addr, addrlen) && errno != EINPROGRESS) {
+        if (!custom_connect(sockfd, dest_addr, addrlen) && errno != EINPROGRESS) {
+            PDEBUG("fast connect failed");
             return -1;
         }
         dest_addr = NULL;

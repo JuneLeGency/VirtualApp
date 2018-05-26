@@ -13,8 +13,12 @@ public class MainActivity extends AppCompatActivity {
         ThreadUtil.get().execute(new Runnable() {
             @Override
             public void run() {
-                String result = HttpRequest.get("https://www.baidu.com/").body();
-                Log.d("baidu", "result" + result);
+                try {
+                    String result = HttpRequest.get("http://httpbin.org/ip").body();
+                    Log.d("legency", "httpbin.org" + result);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         });
     }

@@ -9,7 +9,7 @@ void DUMP_PROXY_CHAIN(proxy_data *pchain, unsigned int count) {
 	char ip_buf[INET6_ADDRSTRLEN];
 	for (; count; pchain++, count--) {
 		if(!inet_ntop(pchain->ip.is_v6?AF_INET6:AF_INET,pchain->ip.addr.v6,ip_buf,sizeof ip_buf)) {
-			proxychains_write_log(LOG_PREFIX "error: ip address conversion failed\n");
+			PDEBUG(LOG_PREFIX "error: ip address conversion failed\n");
 			continue;
 		}
 		PDEBUG("[%s] %s %s:%d", proxy_state_strmap[pchain->ps],
