@@ -21,12 +21,21 @@ import java.util.List;
  */
 public enum IObIndex {
 
+    /**
+     * gps 地理位置
+     */
     @IObType(Location.class)
     LOCATION,
 
+    /**
+     * 活动网络信息
+     */
     @IObType(android.net.NetworkInfo.class)
     NETWORK_INFO,
 
+    /**
+     * 基站信息
+     */
     @IObType(List.class)
     CELL_INFOS,
 

@@ -71,6 +71,7 @@ include $(BUILD_SHARED_LIBRARY)
 ########################################################
 ## libproxychainsng
 ########################################################
+#https://www.hi-linux.com/posts/48321.html
 include $(CLEAR_VARS)
 LOCAL_MODULE:= proxychainsng
 

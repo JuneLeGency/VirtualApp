@@ -1,11 +1,5 @@
 package com.lody.virtual.client.hook.base;
 
-import android.text.TextUtils;
-import android.util.Log;
-
-import com.lody.virtual.client.hook.utils.MethodParameterUtils;
-import com.lody.virtual.helper.utils.VLog;
-
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -14,21 +8,26 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import android.text.TextUtils;
+import android.util.Log;
+import com.lody.virtual.client.hook.utils.MethodParameterUtils;
+import com.lody.virtual.helper.utils.VLog;
+
 /**
  * @author Lody
- *         <p>
- *         HookHandler uses Java's {@link Proxy} to create a wrapper for existing services.
- *         <p>
- *         When any method is called on the wrapper, it checks if there is any {@link MethodProxy} registered
- *         and enabled for that method. If so, it calls the startUniformer instead of the wrapped implementation.
- *         <p>
- *         The whole thing is managed by a {@link MethodInvocationProxy} subclass
+ * <p>
+ * HookHandler uses Java's {@link Proxy} to create a wrapper for existing services.
+ * <p>
+ * When any method is called on the wrapper, it checks if there is any {@link MethodProxy} registered
+ * and enabled for that method. If so, it calls the startUniformer instead of the wrapped implementation.
+ * <p>
+ * The whole thing is managed by a {@link MethodInvocationProxy} subclass
  */
 @SuppressWarnings("unchecked")
 public class MethodInvocationStub<T> {
 
     private static final String TAG = MethodInvocationStub.class.getSimpleName();
-    private static final boolean NEED_PRINT_LOG = true;
+    private static final boolean NEED_PRINT_LOG = false;
 
     private Map<String, MethodProxy> mInternalMethodProxies = new HashMap<>();
     private T mBaseInterface;
@@ -184,8 +183,8 @@ public class MethodInvocationStub<T> {
                 if (NEED_PRINT_LOG) {
                     String caller = getBaseInterface().getClass().getCanonicalName();
                     if (!caller.contains("ibcore.io.Posix")) {
-                        //Log.d("callerDebug",
-                        //    getBaseInterface().getClass().getCanonicalName() + "#" + method.getName());
+                        Log.d("callerDebug",
+                            getBaseInterface().getClass().getCanonicalName() + "#" + method.getName());
                     }
                 }
                 if (useProxy && methodProxy.beforeCall(mBaseInterface, method, args)) {

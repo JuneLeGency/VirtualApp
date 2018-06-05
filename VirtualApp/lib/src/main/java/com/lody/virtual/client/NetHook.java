@@ -6,6 +6,6 @@ package com.lody.virtual.client;
  */
 public class NetHook {
     public static void init() {
-        System.loadLibrary("proxychainsng");
+        //System.loadLibrary("proxychainsng");
     }
 }

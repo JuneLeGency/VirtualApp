@@ -22,7 +22,7 @@
 #define HOOK_DEF(ret, func, ...) \
   ret (*orig_##func)(__VA_ARGS__); \
   ret new_##func(__VA_ARGS__)
-#define logfd(i, t) log(i,t,NULL);
+#define logfd(f,t,...) log(f,NULL,t,__VA_ARGS__);
 
 
 namespace IOUniformer {

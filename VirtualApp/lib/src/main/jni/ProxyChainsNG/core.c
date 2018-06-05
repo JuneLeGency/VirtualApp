@@ -776,7 +776,6 @@ int connect_proxy_chain(int sock, ip_type target_ip,
 
     PDEBUG(TP "OK\n");
     int newfd = dup2(ns, sock);
-    PDEBUG("sockchage %d,%d,%d", ns, sock, newfd);
     close(ns);
     return 0;
     error:

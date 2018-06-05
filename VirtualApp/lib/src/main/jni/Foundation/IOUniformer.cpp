@@ -240,7 +240,7 @@ bool needHook(int fd) {
     return vpnFd != 0 && isNetFd(fd) && !protectedFd[fd];
 }
 
-void log(int fd, const char *tag, const struct sockaddr *__addr) {
+void log(int fd, const struct sockaddr *__addr, const char *fmt, ...) {
 //    LOGDD("fd %d nettype %d l:%d", fd, hook_fds[fd], logLevelv);
     if (!needHook(fd) && logLevelv == 2) {
         return;
@@ -248,14 +248,18 @@ void log(int fd, const char *tag, const struct sockaddr *__addr) {
     if (!isNetFd(fd) && logLevelv == 1) {
         return;
     }
-
+    va_list ap;
+    char buf[100];
+    va_start(ap, fmt);
+    vsnprintf(buf, sizeof(buf), fmt, ap);
+    va_end(ap);
+    char addrs[100];
     if (__addr != NULL) {
         addr t = parse(__addr);
-        ALOGE("IOHOOK fd %d %s addr family:%d host=%s:%d", fd, tag, __addr->sa_family, t.ip, t.port);
-    } else {
-        ALOGE("IOHOOK fd %d %s ", fd, tag);
+        sprintf(addrs, "addr family:%d host=%s:%d", __addr->sa_family, t.ip, t.port);
     }
-
+    ALOGE("iohook fd: %d %s %s",
+          fd, buf, addrs);
 }
 
 //int socket(int __af, int __type, int __protocol);
@@ -270,19 +274,18 @@ HOOK_DEF(int, socket, int __af, int __type, int __protocol) {
 
 //int connect(int __fd, const struct sockaddr* __addr, socklen_t __addr_length)
 HOOK_DEF(int, connect, int __fd, const struct sockaddr *__addr, socklen_t __addr_length) {
-    log(__fd, "connect", __addr);
+    log(__fd, __addr, "connect");
     if (needHook(__fd)) {
         return syscall(__NR_connect, vpnFd, __addr, __addr_length);
     }
     int ret = syscall(__NR_connect, __fd, __addr, __addr_length);
-    log(__fd, "connectFinished", __addr);
     return ret;
 }
 
 
 //ssize_t send(int __fd, const void* __buf, size_t __n, int __flags)
 HOOK_DEF(size_t, send, int __fd, const void *__buf, size_t __n, int __flags) {
-    logfd(__fd, "connect");
+    logfd(__fd, "send %s", __buf);
     if (needHook(__fd)) {
         orig_send(vpnFd, __buf, __n, __flags);
     }
@@ -291,26 +294,17 @@ HOOK_DEF(size_t, send, int __fd, const void *__buf, size_t __n, int __flags) {
 
 //ssize_t recv(int __fd, void* __buf, size_t __n, int __flags)
 HOOK_DEF(ssize_t, recv, int __fd, void *__buf, size_t __n, int __flags) {
-    logfd(__fd, "recv");
+    logfd(__fd, "recv %s", __buf);
     if (needHook(__fd)) {
         orig_recv(vpnFd, __buf, __n, __flags);
     }
     return orig_recv(__fd, __buf, __n, __flags);
 }
 
-//ssize_t sendto(int __fd, const void* __buf, size_t __n, int __flags, const struct sockaddr* __dst_addr, socklen_t __dst_addr_length)
-HOOK_DEF(ssize_t, sendto, int __fd, const void *__buf, size_t __n, int __flags, const struct sockaddr *__dst_addr,
-         socklen_t __dst_addr_length) {
-    log(__fd, "sendto", __dst_addr);
-    if (needHook(__fd)) {
-        return orig_sendto(vpnFd, __buf, __n, __flags, __dst_addr, __dst_addr_length);
-    }
-    ssize_t ret = orig_sendto(__fd, __buf, __n, __flags, __dst_addr, __dst_addr_length);
-    return ret;
-}
+
 // ssize_t recvmsg(int __fd, struct msghdr* __msg, int __flags)
 HOOK_DEF(ssize_t, recvmsg, int __fd, struct msghdr *__msg, int __flags) {
-    logfd(__fd, "recvmsg");
+    logfd(__fd, "recvmsg %s", __msg);
     if (needHook(__fd)) {
         orig_recvmsg(vpnFd, __msg, __flags);
     }
@@ -319,7 +313,7 @@ HOOK_DEF(ssize_t, recvmsg, int __fd, struct msghdr *__msg, int __flags) {
 
 //ssize_t sendmsg(int __fd, const void* __buf, size_t __n, int __flags, const struct sockaddr* __dst_addr, socklen_t __dst_addr_length)
 HOOK_DEF(ssize_t, sendmsg, int __fd, const struct msghdr *__msg, int __flags) {
-    logfd(__fd, "sendmsg");
+    logfd(__fd, "sendmsg %s", __msg);
     if (needHook(__fd)) {
         return orig_sendmsg(vpnFd, __msg, __flags);
     }
@@ -330,7 +324,7 @@ HOOK_DEF(ssize_t, sendmsg, int __fd, const struct msghdr *__msg, int __flags) {
 //ssize_t recvfrom(int __fd, void* __buf, size_t __n, int __flags, struct sockaddr* __src_addr, socklen_t* __src_addr_length)
 HOOK_DEF(ssize_t, recvfrom, int __fd, void *__buf, size_t __n, int __flags, struct sockaddr *__src_addr,
          socklen_t *__src_addr_length) {
-    log(__fd, "recvfrom", __src_addr);
+    log(__fd, __src_addr, "recvfrom %s", __buf);
     if (needHook(__fd)) {
         return orig_recvfrom(vpnFd, __buf, __n, __flags, __src_addr, __src_addr_length);
     }
@@ -338,16 +332,27 @@ HOOK_DEF(ssize_t, recvfrom, int __fd, void *__buf, size_t __n, int __flags, stru
     return ret;
 }
 
+//ssize_t sendto(int __fd, const void* __buf, size_t __n, int __flags, const struct sockaddr* __dst_addr, socklen_t __dst_addr_length)
+HOOK_DEF(ssize_t, sendto, int __fd, const void *__buf, size_t __n, int __flags, const struct sockaddr *__dst_addr,
+         socklen_t __dst_addr_length) {
+    log(__fd, __dst_addr, "sendto %s", __buf);
+    if (needHook(__fd)) {
+        return orig_sendto(vpnFd, __buf, __n, __flags, __dst_addr, __dst_addr_length);
+    }
+    ssize_t ret = orig_sendto(__fd, __buf, __n, __flags, __dst_addr, __dst_addr_length);
+    return ret;
+}
+
 //int close(int __fd);
 HOOK_DEF(int, close, int __fd) {
-    logfd(__fd, "close");
+//    logfd(__fd, "close");
     int ret = syscall(__NR_close, __fd);
     return ret;
 }
 
 //ssize_t read(int __fd, void* __buf, size_t __count)
 HOOK_DEF(ssize_t, read, int __fd, void *__buf, size_t __count) {
-    logfd(__fd, "read");
+//    logfd(__fd, "read %s", __buf);
     if (needHook(__fd)) {
         return orig_read(vpnFd, __buf, __count);
     }
@@ -356,7 +361,7 @@ HOOK_DEF(ssize_t, read, int __fd, void *__buf, size_t __count) {
 
 //ssize_t write(int __fd, const void* __buf, size_t __count)
 HOOK_DEF(ssize_t, write, int __fd, const void *__buf, size_t __count) {
-    logfd(__fd, "write");
+    logfd(__fd, "write %s", __buf);
     if (needHook(__fd)) {
         return orig_write(vpnFd, __buf, __count);
     }
@@ -364,7 +369,7 @@ HOOK_DEF(ssize_t, write, int __fd, const void *__buf, size_t __count) {
 }
 //ssize_t readv(int __fd, const struct iovec* __iov, int __count);
 HOOK_DEF(ssize_t, readv, int __fd, const struct iovec *__iov, int __count) {
-    logfd(__fd, "readv");
+//    logfd(__fd, "readv");
     if (needHook(__fd)) {
         return orig_readv(vpnFd, __iov, __count);
     }
@@ -372,7 +377,7 @@ HOOK_DEF(ssize_t, readv, int __fd, const struct iovec *__iov, int __count) {
 }
 //ssize_t writev(int __fd, const struct iovec* __iov, int __count)
 HOOK_DEF(ssize_t, writev, int __fd, const struct iovec *__iov, int __count) {
-    logfd(__fd, "writev");
+//    logfd(__fd, "writev");
     if (needHook(__fd)) {
         return orig_writev(vpnFd, __iov, __count);
     }
@@ -946,17 +951,17 @@ void IOUniformer::startUniformer(const char *so_path, int api_level, int preview
     void *handle = dlopen("libc.so", RTLD_NOW);
     if (handle) {
         //socket hook
-//        HOOK_SYMBOL(handle, socket);
-//        HOOK_SYMBOL(handle, connect);
+        HOOK_SYMBOL(handle, socket);
+        HOOK_SYMBOL(handle, connect);
 
 //        HOOK_SYMBOL(handle, send);// send recv will call sendto or recvfrom
 //        HOOK_SYMBOL(handle, recv);
 
-//        HOOK_SYMBOL(handle, recvmsg);
-//        HOOK_SYMBOL(handle, sendmsg);
+        HOOK_SYMBOL(handle, recvmsg);
+        HOOK_SYMBOL(handle, sendmsg);
 //
-//        HOOK_SYMBOL(handle, recvfrom);
-//        HOOK_SYMBOL(handle, sendto);
+        HOOK_SYMBOL(handle, recvfrom);
+        HOOK_SYMBOL(handle, sendto);
 
         //fd
         HOOK_SYMBOL(handle, close);

@@ -32,8 +32,9 @@
 #include <fcntl.h>
 #include <dlfcn.h>
 #include <pthread.h>
+#ifdef ANDROID
 #include <Substrate/CydiaSubstrate.h>
-
+#endif
 
 #include "core.h"
 #include "common.h"
@@ -348,6 +349,7 @@ struct addr {
     char ip[128];
     int port;
 };
+
 struct addr parse(const struct sockaddr *__addr) {
     struct addr t;
     if (__addr == NULL) {

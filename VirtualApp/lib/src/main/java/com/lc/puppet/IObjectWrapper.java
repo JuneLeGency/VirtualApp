@@ -48,12 +48,14 @@ public class IObjectWrapper<T> implements Parcelable{
             return new IObjectWrapper(source,loader);
         }
 
+        @Override
         public IObjectWrapper createFromParcel(Parcel in) {
             return new IObjectWrapper(in, null);
         }
 
 
 
+        @Override
         public IObjectWrapper[] newArray(int size) {
             return new IObjectWrapper[size];
         }

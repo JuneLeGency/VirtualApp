@@ -1,8 +1,0 @@
-[
-  {
-   "sys_short_name":"connectity",
-   "sys_manager": "ConnectivityManager",
-   "hook_methods":[],
-   "patch":""
-  },  
-]

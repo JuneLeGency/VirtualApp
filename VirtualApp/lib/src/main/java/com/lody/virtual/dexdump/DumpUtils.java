@@ -27,6 +27,7 @@ public class DumpUtils {
 
     public static final String FOLDER = "dexDump";
     private static final boolean ENABLE_DUMP = false;
+    private static final boolean DUMP_ALL = true;
 
     private static ApplicationInfo sAppInfo = null;
 
@@ -54,6 +55,7 @@ public class DumpUtils {
         return VClientImpl.get().getCurrentPackage();
     }
 
+    //8.0 以上改了api getDex 失效
     public static void dump(Class clazz) {
         try {
             Object o = ClassM.dexCache.get(clazz);
@@ -92,6 +94,7 @@ public class DumpUtils {
         "system/framework/framework.jar"};
 
     private static boolean checkPass(String location) {
+        if (DUMP_ALL) { return true; }
         if (location.contains(getPackage())) {
             return true;
         }
@@ -169,6 +172,11 @@ public class DumpUtils {
     public static void dump(Application app) {
         if (!ENABLE_DUMP) {
             return;
+        }
+        try {
+            dump(Class.forName("com.android.okhttp.internal.huc.HttpURLConnectionImpl"));
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
         }
         dump(app.getClass());
         hook(app.getClassLoader());

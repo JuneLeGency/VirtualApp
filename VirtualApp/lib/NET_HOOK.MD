@@ -51,4 +51,6 @@ https://github.com/ac-pm/ProxyOn/blob/master/app/src/main/java/mobi/acpm/proxyon
                 }
             }
         });
+        
+        http://androidxref.com/8.0.0_r4/xref/libcore/ojluni/src/main/java/sun/net/spi/DefaultProxySelector.java#55
  ```
