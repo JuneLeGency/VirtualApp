@@ -2,46 +2,6 @@ LOCAL_PATH := $(call my-dir)
 MAIN_LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
-LOCAL_SRC_FILES:= \
-       fb/assert.cpp \
-       fb/jni/ByteBuffer.cpp \
-       fb/jni/Countable.cpp \
-       fb/jni/Environment.cpp \
-       fb/jni/Exceptions.cpp \
-       fb/jni/fbjni.cpp \
-       fb/jni/Hybrid.cpp \
-       fb/jni/jni_helpers.cpp \
-       fb/jni/LocalString.cpp \
-       fb/jni/OnLoad.cpp \
-       fb/jni/References.cpp \
-       fb/jni/WeakReference.cpp \
-       fb/log.cpp \
-       fb/lyra/lyra.cpp \
-       fb/onload.cpp \
-
-LOCAL_C_INCLUDES := $(LOCAL_PATH)/fb/include
-LOCAL_EXPORT_C_INCLUDES := $(LOCAL_PATH)/fb/include
-
-LOCAL_CFLAGS := -DLOG_TAG=\"libfb\" -DDISABLE_CPUCAP -DDISABLE_XPLAT -fexceptions -frtti
-LOCAL_CFLAGS += -Wall -Werror
-# include/utils/threads.h has unused parameters
-LOCAL_CFLAGS += -Wno-unused-parameter
-ifeq ($(TOOLCHAIN_PERMISSIVE),true)
-  LOCAL_CFLAGS += -Wno-error=unused-but-set-variable
-endif
-LOCAL_CFLAGS += -DHAVE_POSIX_CLOCKS
-
-CXX11_FLAGS := -std=gnu++11
-LOCAL_CFLAGS += $(CXX11_FLAGS)
-
-LOCAL_EXPORT_CPPFLAGS := $(CXX11_FLAGS)
-
-LOCAL_LDLIBS := -llog -ldl -landroid
-LOCAL_EXPORT_LDLIBS := -llog
-
-LOCAL_MODULE := libfb
-
-include $(BUILD_STATIC_LIBRARY)
 ###########################
 
 include $(CLEAR_VARS)
@@ -99,3 +59,39 @@ LOCAL_CFLAGS += -fno-rtti -fno-exceptions
 
 LOCAL_LDLIBS := -ldl -llog
 include $(BUILD_SHARED_LIBRARY)
+
+###substrate
+include $(CLEAR_VARS)
+LOCAL_MODULE:= substrate
+LOCAL_C_INCLUDES:= $(LOCAL_PATH)/Substrate
+LOCAL_SRC_FILES:= Substrate/hde64.c \
+                  Substrate/SubstrateDebug.cpp \
+                  Substrate/SubstrateHook.cpp \
+                  Substrate/SubstratePosixMemory.cpp \
+LOCAL_CFLAGS := -O2
+include $(BUILD_SHARED_LIBRARY)
+
+###IHook
+include $(CLEAR_VARS)
+ifdef USE_XHOOK
+HOOK_MODULE = xhook
+else
+HOOK_MODULE = substrate
+endif
+LOCAL_MODULE:= ihook
+LOCAL_C_INCLUDES:= $(LOCAL_PATH)/IHook
+LOCAL_SRC_FILES:= IHook/hook.c \
+LOCAL_CFLAGS += -O2 -I$(LOCAL_PATH)/IHook
+LOCAL_SHARED_LIBRARIES  :=substrate
+include $(BUILD_SHARED_LIBRARY)
+
+###hookdebug
+include $(CLEAR_VARS)
+LOCAL_MODULE:= hookdebug
+LOCAL_SRC_FILES := hookdebug/hookimpl.c
+LOCAL_SHARED_LIBRARIES := ihook
+LOCAL_CFLAGS := -Wno-error=format-security -fpermissive
+LOCAL_LDLIBS := -ldl -llog
+include $(BUILD_SHARED_LIBRARY)
+###
+include $(MAIN_LOCAL_PATH)/fb/Android.mk

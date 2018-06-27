@@ -219,7 +219,6 @@ public class InstrumentationDelegate extends Instrumentation {
     public Application newApplication(ClassLoader cl, String className, Context context)
         throws InstantiationException, IllegalAccessException, ClassNotFoundException {
         Application app = base.newApplication(new ProxyClassLoader(cl), className, context);
-        Class<? extends Application> c = app.getClass();
         DumpUtils.dump(app);
         return app;
     }

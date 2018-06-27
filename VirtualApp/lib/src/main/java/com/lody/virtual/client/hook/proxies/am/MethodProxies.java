@@ -61,6 +61,7 @@ import com.lody.virtual.client.stub.StubPendingActivity;
 import com.lody.virtual.client.stub.StubPendingReceiver;
 import com.lody.virtual.client.stub.StubPendingService;
 import com.lody.virtual.client.stub.VASettings;
+import com.lody.virtual.dexdump.DebugQueen;
 import com.lody.virtual.dexdump.DumpUtils;
 import com.lody.virtual.helper.compat.ActivityManagerCompat;
 import com.lody.virtual.helper.compat.BuildCompat;
@@ -368,6 +369,7 @@ public class MethodProxies {
 
         @Override
         public Object call(Object who, Method method, Object... args) throws Throwable {
+            DebugQueen.debug();
             int intentIndex = ArrayUtils.indexOfObject(args, Intent.class, 1);
             if (intentIndex < 0) {
                 return ActivityManagerCompat.START_INTENT_NOT_RESOLVED;
@@ -439,6 +441,7 @@ public class MethodProxies {
             //if (intent.getComponent() != null) {
             //    DumpUtils.dumpByFind(intent.getComponent().getClassName());
             //}
+            //Reflect.on(VClientImpl.get().getCurrentApplication().getClassLoader().findClass("com.tencent.common.http.QueenConfig")).call("isQueenProxyEnable")
             int res = VActivityManager.get().startActivity(intent, activityInfo, resultTo, options, resultWho,
                 requestCode, VUserHandle.myUserId());
             if (res != 0 && resultTo != null && requestCode > 0) {

@@ -26,7 +26,7 @@ public class DumpUtils {
     public static final String TAG = "DUMP";
 
     public static final String FOLDER = "dexDump";
-    private static final boolean ENABLE_DUMP = false;
+    private static final boolean ENABLE_DUMP = true;
     private static final boolean DUMP_ALL = true;
 
     private static ApplicationInfo sAppInfo = null;
@@ -91,7 +91,7 @@ public class DumpUtils {
     public static final String[] whiteList = {".jiagu", "/system/app/"};
 
     public static final String[] blackList = {"miuisystem.apk", "miui.apk", "core-libart.jar",
-        "system/framework/framework.jar"};
+        "system/framework/framework.jar","/system/app/miuisystem/miuisystem.apk"};
 
     private static boolean checkPass(String location) {
         if (DUMP_ALL) { return true; }
@@ -178,7 +178,7 @@ public class DumpUtils {
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
-        dump(app.getClass());
-        hook(app.getClassLoader());
+        //dump(app.getClass());
+        //hook(app.getClassLoader());
     }
 }
