@@ -369,7 +369,7 @@ public class MethodProxies {
 
         @Override
         public Object call(Object who, Method method, Object... args) throws Throwable {
-            DebugQueen.debug();
+
             int intentIndex = ArrayUtils.indexOfObject(args, Intent.class, 1);
             if (intentIndex < 0) {
                 return ActivityManagerCompat.START_INTENT_NOT_RESOLVED;

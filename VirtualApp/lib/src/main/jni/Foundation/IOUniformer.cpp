@@ -90,7 +90,7 @@ void IOUniformer::redirect(const char *orig_path, const char *new_path) {
 
 const char *IOUniformer::query(const char *orig_path) {
     int res;
-    return relocate_path(orig_path, &res);
+    return (orig_path, &res);
 }
 
 void IOUniformer::whitelist(const char *_path) {
@@ -951,25 +951,25 @@ void IOUniformer::startUniformer(const char *so_path, int api_level, int preview
     void *handle = dlopen("libc.so", RTLD_NOW);
     if (handle) {
         //socket hook
-//        HOOK_SYMBOL(handle, socket);
-//        HOOK_SYMBOL(handle, connect);
+        HOOK_SYMBOL(handle, socket);
+        HOOK_SYMBOL(handle, connect);
 
-//        HOOK_SYMBOL(handle, send);// send recv will call sendto or recvfrom
-//        HOOK_SYMBOL(handle, recv);
+        HOOK_SYMBOL(handle, send);// send recv will call sendto or recvfrom
+        HOOK_SYMBOL(handle, recv);
 
-//        HOOK_SYMBOL(handle, recvmsg);
-//        HOOK_SYMBOL(handle, sendmsg);
-//
-//        HOOK_SYMBOL(handle, recvfrom);
-//        HOOK_SYMBOL(handle, sendto);
+        HOOK_SYMBOL(handle, recvmsg);
+        HOOK_SYMBOL(handle, sendmsg);
 
-        //fd
-//        HOOK_SYMBOL(handle, close);
-//        HOOK_SYMBOL(handle, read);
-//        HOOK_SYMBOL(handle, write);
+        HOOK_SYMBOL(handle, recvfrom);
+        HOOK_SYMBOL(handle, sendto);
 
-//        HOOK_SYMBOL(handle, readv);
-//        HOOK_SYMBOL(handle, writev);
+//        fd
+        HOOK_SYMBOL(handle, close);
+        HOOK_SYMBOL(handle, read);
+        HOOK_SYMBOL(handle, write);
+
+        HOOK_SYMBOL(handle, readv);
+        HOOK_SYMBOL(handle, writev);
         /*
          * read()/write() io
             recv()/send()  socket

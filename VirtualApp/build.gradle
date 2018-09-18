@@ -6,7 +6,7 @@ buildscript {
         google()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.1.2'
+        classpath 'com.android.tools.build:gradle:3.1.4'
         classpath 'me.tatarka:gradle-retrolambda:3.7.0'
         classpath 'com.android.tools.build:gradle-experimental:0.11.1'
         classpath "com.vanniktech:gradle-dependency-graph-generator-plugin:0.4.0"

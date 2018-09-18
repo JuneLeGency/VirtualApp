@@ -6,6 +6,10 @@ package com.lody.virtual.client;
  */
 public class NetHook {
     public static void init() {
-        System.loadLibrary("hookdebug");
+        try {
+            System.loadLibrary("hookdebug");
+        } catch (Error e) {
+            e.printStackTrace();
+        }
     }
 }

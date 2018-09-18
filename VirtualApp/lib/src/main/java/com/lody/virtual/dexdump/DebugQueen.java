@@ -6,7 +6,6 @@ import java.net.Proxy;
 import java.net.URL;
 
 import android.util.Log;
-import android.webkit.WebView;
 import com.lody.virtual.client.VClientImpl;
 import com.lody.virtual.helper.utils.Reflect;
 import com.taobao.android.dexposed.ClassUtils;
@@ -24,11 +23,14 @@ public class DebugQueen {
         if (hasHook) {
             return;
         }
-        if (VClientImpl.get().getCurrentApplication() == null) { return; }
-        boolean queenEnable = Reflect.on("com.tencent.common.http.QueenConfig", getClassLoader()).call(
-            "isQueenProxyEnable").get();
-        Log.d("queenDebug", "isQueenProxyEnable:" + queenEnable);
+        Log.d("asdasdasd","1");
+        //if (VClientImpl.get().getCurrentApplication() == null) { return; }
+        Log.d("asdasdasd","2");
+        //boolean queenEnable = Reflect.on("com.tencent.common.http.QueenConfig", getClassLoader()).call(
+        //    "isQueenProxyEnable").get();
+        //Log.d("queenDebug", "isQueenProxyEnable:" + queenEnable);
         hookRequestCall();
+        Log.d("asdasdasd","3");
         hasHook = true;
     }
 
@@ -37,14 +39,25 @@ public class DebugQueen {
     }
 
     static void hookRequestCall() {
-        DexposedBridge.findAndHookMethod(WebView.class,
-            "loadUrl", String.class,
-            new XC_MethodHook() {
+        try {
+            DexposedBridge.hookAllConstructors(Class.forName("com.android.okhttp.OkHttpClient"), new XC_MethodHook() {
                 @Override
                 protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                    Log.d("queenDebug", "WebView loadUrl " + param.args[0].toString());
+                    Log.d("asd", "asd", new Throwable());
+                    super.afterHookedMethod(param);
                 }
             });
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        //DexposedBridge.findAndHookMethod(WebView.class,
+        //    "loadUrl", String.class,
+        //    new XC_MethodHook() {
+        //        @Override
+        //        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+        //            Log.d("queenDebug", "WebView loadUrl " + param.args[0].toString());
+        //        }
+        //    });
         //hookIO();
         //queenHook();
         //proxynewHook();

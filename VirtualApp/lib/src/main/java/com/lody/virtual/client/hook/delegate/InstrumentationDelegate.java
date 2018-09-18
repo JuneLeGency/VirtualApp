@@ -16,6 +16,7 @@ import android.os.IBinder;
 import android.os.PersistableBundle;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
+import com.lody.virtual.dexdump.DebugQueen;
 import com.lody.virtual.dexdump.DumpUtils;
 import com.lody.virtual.dexdump.ProxyClassLoader;
 
@@ -219,7 +220,8 @@ public class InstrumentationDelegate extends Instrumentation {
     public Application newApplication(ClassLoader cl, String className, Context context)
         throws InstantiationException, IllegalAccessException, ClassNotFoundException {
         Application app = base.newApplication(new ProxyClassLoader(cl), className, context);
-        DumpUtils.dump(app);
+        //DumpUtils.dump(app);
+        DebugQueen.debug();
         return app;
     }
 
