@@ -25,6 +25,9 @@
 
 [substrate](http://www.cydiasubstrate.com)
 
+[frida](https://www.frida.re/docs/home/)
+[Android_Inline_Hook]( https://github.com/GToad/Android_Inline_Hook)
+
 ##修复类
 
 [AndFix](https://github.com/alibaba/AndFix)
