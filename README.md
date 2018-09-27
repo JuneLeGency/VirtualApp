@@ -26,6 +26,7 @@
 [substrate](http://www.cydiasubstrate.com)
 
 [frida](https://www.frida.re/docs/home/)
+
 [Android_Inline_Hook]( https://github.com/GToad/Android_Inline_Hook)
 
 ##修复类
@@ -42,7 +43,9 @@
 
 ~~[Nuwa大众](https://github.com/jasonross/Nuwa)~~
 
-~~[HotFix](https://github.com/dodola/HotFix)~~ [RocooFix](https://github.com/dodola/RocooFix)
+~~[HotFix](https://github.com/dodola/HotFix)~~ 
+
+[RocooFix](https://github.com/dodola/RocooFix)
 
 [DroidFix](https://github.com/bunnyblue/DroidFix)
 
@@ -70,6 +73,8 @@ Sophix
 - [Small](https://github.com/wequick/Small)
 
 - [android-pluginmgr](https://github.com/houkx/android-pluginmgr)
+
+- [插件化框架](https://github.com/limpoxe/Android-Plugin-Framework)
 
 - [热修复之 Method Hook 原理分析](https://pqpo.me/2017/07/07/hotfix-method-hook/)
 
