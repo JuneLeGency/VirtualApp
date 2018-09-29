@@ -55,7 +55,7 @@ Sophix
 
 [Android 增量更新](https://github.com/JackCho/AndroidPatchUpdate)
 [Stark](https://github.com/ximsfei/Stark)
-
+[Neptune](https://github.com/iqiyi/Neptune)
 
 
 ## 动态加载
