@@ -21,6 +21,8 @@
 
 [Legend](https://github.com/asLody/legend)
 
+[ElfHook](https://github.com/asLody/ElfHook)
+
 [MethodHook](https://github.com/pqpo/MethodHook)
 
 [substrate](http://www.cydiasubstrate.com)
