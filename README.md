@@ -23,6 +23,8 @@
 
 [ElfHook](https://github.com/asLody/ElfHook)
 
+[AndHook](https://github.com/asLody/AndHook)
+
 [MethodHook](https://github.com/pqpo/MethodHook)
 
 [substrate](http://www.cydiasubstrate.com)
