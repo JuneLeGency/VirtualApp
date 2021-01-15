@@ -7,6 +7,8 @@
 
 ##Hook基础
 
+[exposed](https://github.com/android-hacker/exposed)
+
 [DexPosed](https://github.com/alibaba/dexposed)
 
 [FBHook](https://github.com/dodola/fbhookfork)
